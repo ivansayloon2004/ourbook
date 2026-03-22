@@ -17,6 +17,19 @@ create table if not exists public.memories (
   category text not null,
   memory_date date not null,
   photo_path text,
+  is_favorite boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.memories add column if not exists is_favorite boolean not null default false;
+
+create table if not exists public.memory_comments (
+  id uuid primary key default gen_random_uuid(),
+  memory_id uuid not null references public.memories(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  couple_code text not null,
+  author_name text not null,
+  body text not null,
   created_at timestamptz not null default timezone('utc', now())
 );
 
@@ -54,6 +67,7 @@ for each row execute procedure public.handle_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.memories enable row level security;
+alter table public.memory_comments enable row level security;
 
 drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own"
@@ -102,6 +116,30 @@ for delete
 to authenticated
 using (couple_code = public.current_shared_code());
 
+drop policy if exists "memory comments shared read" on public.memory_comments;
+create policy "memory comments shared read"
+on public.memory_comments
+for select
+to authenticated
+using (couple_code = public.current_shared_code());
+
+drop policy if exists "memory comments shared insert" on public.memory_comments;
+create policy "memory comments shared insert"
+on public.memory_comments
+for insert
+to authenticated
+with check (
+  owner_id = auth.uid()
+  and couple_code = public.current_shared_code()
+);
+
+drop policy if exists "memory comments shared delete" on public.memory_comments;
+create policy "memory comments shared delete"
+on public.memory_comments
+for delete
+to authenticated
+using (couple_code = public.current_shared_code());
+
 insert into storage.buckets (id, name, public)
 values ('memory-photos', 'memory-photos', false)
 on conflict (id) do nothing;
@@ -139,6 +177,13 @@ using (
 do $$
 begin
   alter publication supabase_realtime add table public.memories;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.memory_comments;
 exception
   when duplicate_object then null;
 end $$;

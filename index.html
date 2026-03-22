@@ -188,6 +188,54 @@
           </article>
         </section>
 
+        <section class="dashboard-section">
+          <div class="section-heading">
+            <p class="eyebrow">Dashboard</p>
+            <h3>Your shared snapshot</h3>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="dashboard-card">
+              <p class="dashboard-label">Total memories</p>
+              <h4 id="dashboard-memories">0</h4>
+              <p>Every trip, date, and ordinary miracle you've saved together.</p>
+            </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Photo memories</p>
+              <h4 id="dashboard-photos">0</h4>
+              <p>The moments that already came with a frame-worthy picture.</p>
+            </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Favorite moments</p>
+              <h4 id="dashboard-favorites">0</h4>
+              <p>The memories you marked as the ones you want to come back to first.</p>
+            </article>
+            <article class="dashboard-card wide-card">
+              <p class="dashboard-label">Latest chapter</p>
+              <h4 id="dashboard-latest-title">Nothing saved yet</h4>
+              <p id="dashboard-latest-meta">Once you add a memory, your newest story will appear here.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="flashback-section">
+          <div class="section-heading">
+            <p class="eyebrow">On this day</p>
+            <h3>A little anniversary machine for your timeline</h3>
+          </div>
+
+          <div class="flashback-card">
+            <div class="flashback-copy">
+              <p class="flashback-date" id="flashback-date-label">Today in your story</p>
+              <h4 id="flashback-title">No flashback yet</h4>
+              <p id="flashback-description">
+                Memories from this same date in past years will appear here automatically.
+              </p>
+            </div>
+            <div class="flashback-list" id="flashback-list"></div>
+          </div>
+        </section>
+
         <section class="story-grid" id="timeline">
           <div class="section-heading">
             <p class="eyebrow">Your chapter map</p>
@@ -347,6 +395,16 @@
         <h4 class="memory-title"></h4>
         <p class="memory-description"></p>
         <p class="memory-meta"></p>
+        <div class="memory-actions">
+          <button class="favorite-button" type="button">Favorite</button>
+        </div>
+        <div class="comment-section">
+          <div class="comment-list"></div>
+          <form class="comment-form">
+            <input class="comment-input" type="text" name="comment" placeholder="Add a little note..." maxlength="220" required />
+            <button class="comment-button" type="submit">Post</button>
+          </form>
+        </div>
       </article>
     </template>
 

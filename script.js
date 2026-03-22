@@ -31,11 +31,22 @@ const refreshButton = document.getElementById("refresh-memories");
 const memorySubtitle = document.getElementById("memory-subtitle");
 const memoryFeedback = document.getElementById("memory-feedback");
 const stats = document.querySelectorAll(".stat-number");
+const dashboardMemories = document.getElementById("dashboard-memories");
+const dashboardPhotos = document.getElementById("dashboard-photos");
+const dashboardFavorites = document.getElementById("dashboard-favorites");
+const dashboardLatestTitle = document.getElementById("dashboard-latest-title");
+const dashboardLatestMeta = document.getElementById("dashboard-latest-meta");
+const flashbackDateLabel = document.getElementById("flashback-date-label");
+const flashbackTitle = document.getElementById("flashback-title");
+const flashbackDescription = document.getElementById("flashback-description");
+const flashbackList = document.getElementById("flashback-list");
 
 let statsAnimated = false;
 let currentSession = null;
 let currentProfile = null;
 let memoriesChannel = null;
+let currentMemories = [];
+let commentsByMemory = new Map();
 
 function setUnlockedState(unlocked) {
   gate.classList.toggle("hidden", unlocked);
@@ -75,6 +86,11 @@ function formatDate(dateString) {
   }).format(date);
 }
 
+function formatMonthDay(dateString) {
+  const date = new Date(`${dateString}T00:00:00`);
+  return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function slugifyCode(value) {
   return value
     .trim()
@@ -89,6 +105,55 @@ function sanitizeFileName(value) {
 
 function renderEmptyState(message = "No saved memories yet. Add your first one and start your archive.") {
   memoryList.innerHTML = `<div class="memory-empty">${message}</div>`;
+}
+
+function renderFlashback(memories) {
+  flashbackDateLabel.textContent = "Today in your story";
+  flashbackList.innerHTML = "";
+
+  const todayKey = formatMonthDay(new Date().toISOString().slice(0, 10));
+  const matches = memories.filter((memory) => formatMonthDay(memory.memory_date) === todayKey);
+
+  if (!matches.length) {
+    flashbackTitle.textContent = "No flashback yet";
+    flashbackDescription.textContent =
+      "Memories from this same date in past years will appear here automatically.";
+    return;
+  }
+
+  flashbackTitle.textContent = `${matches.length} memory${matches.length > 1 ? "ies" : ""} from this date`;
+  flashbackDescription.textContent =
+    "Same day, different year. A tiny reminder that your story already has its own seasons.";
+
+  matches.slice(0, 3).forEach((memory) => {
+    const item = document.createElement("article");
+    item.className = "flashback-item";
+    item.innerHTML = `
+      <p class="timeline-date">${formatDate(memory.memory_date)}</p>
+      <h4>${memory.title}</h4>
+      <p>${memory.description}</p>
+    `;
+    flashbackList.appendChild(item);
+  });
+}
+
+function updateDashboard(memories) {
+  const photoCount = memories.filter((memory) => memory.photo_path).length;
+  const favoriteCount = memories.filter((memory) => memory.is_favorite).length;
+  const latest = memories[0];
+
+  dashboardMemories.textContent = String(memories.length);
+  dashboardPhotos.textContent = String(photoCount);
+  dashboardFavorites.textContent = String(favoriteCount);
+
+  if (!latest) {
+    dashboardLatestTitle.textContent = "Nothing saved yet";
+    dashboardLatestMeta.textContent = "Once you add a memory, your newest story will appear here.";
+    return;
+  }
+
+  dashboardLatestTitle.textContent = latest.title;
+  dashboardLatestMeta.textContent = `${formatDate(latest.memory_date)} · added by ${latest.author_name}`;
 }
 
 async function createPhotoUrls(memories) {
@@ -112,6 +177,28 @@ async function createPhotoUrls(memories) {
   );
 
   return new Map(signedUrlEntries);
+}
+
+function renderComments(listNode, comments) {
+  listNode.innerHTML = "";
+
+  if (!comments.length) {
+    const empty = document.createElement("div");
+    empty.className = "comment-item";
+    empty.innerHTML = "<p>No notes yet. Leave the first one.</p>";
+    listNode.appendChild(empty);
+    return;
+  }
+
+  comments.forEach((comment) => {
+    const item = document.createElement("div");
+    item.className = "comment-item";
+    item.innerHTML = `
+      <span>${comment.author_name}</span>
+      <p>${comment.body}</p>
+    `;
+    listNode.appendChild(item);
+  });
 }
 
 async function renderMemories(memories) {
@@ -140,6 +227,19 @@ async function renderMemories(memories) {
     node.querySelector(".memory-title").textContent = memory.title;
     node.querySelector(".memory-description").textContent = memory.description;
     node.querySelector(".memory-meta").textContent = `Added by ${memory.author_name || "one of you"}`;
+
+    const favoriteButton = node.querySelector(".favorite-button");
+    favoriteButton.textContent = memory.is_favorite ? "Favorited" : "Favorite";
+    favoriteButton.classList.toggle("active", Boolean(memory.is_favorite));
+    favoriteButton.dataset.id = memory.id;
+    favoriteButton.addEventListener("click", () => toggleFavorite(memory.id, !memory.is_favorite));
+
+    const commentList = node.querySelector(".comment-list");
+    renderComments(commentList, commentsByMemory.get(memory.id) ?? []);
+
+    const commentForm = node.querySelector(".comment-form");
+    commentForm.addEventListener("submit", (event) => handleCommentSubmit(event, memory.id));
+
     memoryList.appendChild(node);
   });
 }
@@ -182,6 +282,30 @@ async function loadProfile(userId) {
   memorySubtitle.textContent = `Synced across space: ${data.shared_code}`;
 }
 
+async function fetchComments(memoryIds) {
+  commentsByMemory = new Map();
+
+  if (!memoryIds.length) {
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("memory_comments")
+    .select("id, memory_id, author_name, body, created_at")
+    .in("memory_id", memoryIds)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return;
+  }
+
+  data.forEach((comment) => {
+    const list = commentsByMemory.get(comment.memory_id) ?? [];
+    list.push(comment);
+    commentsByMemory.set(comment.memory_id, list);
+  });
+}
+
 async function fetchMemories() {
   if (!currentProfile) {
     renderEmptyState("Sign in to load your shared memory vault.");
@@ -192,7 +316,7 @@ async function fetchMemories() {
 
   const { data, error } = await supabase
     .from("memories")
-    .select("id, title, description, category, memory_date, photo_path, author_name, created_at")
+    .select("id, title, description, category, memory_date, photo_path, author_name, created_at, is_favorite")
     .eq("couple_code", currentProfile.shared_code)
     .order("memory_date", { ascending: false })
     .order("created_at", { ascending: false });
@@ -203,8 +327,12 @@ async function fetchMemories() {
     return;
   }
 
-  await renderMemories(data ?? []);
-  setFeedback(data && data.length ? "Everything is up to date." : "No memories yet. Add the first one.");
+  currentMemories = data ?? [];
+  await fetchComments(currentMemories.map((memory) => memory.id));
+  updateDashboard(currentMemories);
+  renderFlashback(currentMemories);
+  await renderMemories(currentMemories);
+  setFeedback(currentMemories.length ? "Everything is up to date." : "No memories yet. Add the first one.");
 }
 
 async function subscribeToMemories() {
@@ -217,7 +345,7 @@ async function subscribeToMemories() {
   }
 
   memoriesChannel = supabase
-    .channel(`memories:${currentProfile.shared_code}`)
+    .channel(`couple-space:${currentProfile.shared_code}`)
     .on(
       "postgres_changes",
       {
@@ -225,6 +353,17 @@ async function subscribeToMemories() {
         schema: "public",
         table: "memories",
         filter: `couple_code=eq.${currentProfile.shared_code}`,
+      },
+      () => {
+        fetchMemories();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "memory_comments",
       },
       () => {
         fetchMemories();
@@ -249,6 +388,45 @@ async function uploadPhoto(file) {
   }
 
   return filePath;
+}
+
+async function toggleFavorite(memoryId, nextValue) {
+  const { error } = await supabase.from("memories").update({ is_favorite: nextValue }).eq("id", memoryId);
+
+  if (error) {
+    setFeedback(error.message, "error");
+    return;
+  }
+
+  setFeedback(nextValue ? "Memory added to favorites." : "Memory removed from favorites.", "success");
+  await fetchMemories();
+}
+
+async function handleCommentSubmit(event, memoryId) {
+  event.preventDefault();
+
+  const input = event.currentTarget.querySelector(".comment-input");
+  const body = input.value.trim();
+  if (!body || !currentProfile || !currentSession) {
+    return;
+  }
+
+  const { error } = await supabase.from("memory_comments").insert({
+    memory_id: memoryId,
+    couple_code: currentProfile.shared_code,
+    owner_id: currentSession.user.id,
+    author_name: currentProfile.display_name,
+    body,
+  });
+
+  if (error) {
+    setFeedback(error.message, "error");
+    return;
+  }
+
+  input.value = "";
+  setFeedback("Comment added to the memory.", "success");
+  await fetchMemories();
 }
 
 async function handleRegister(event) {
@@ -371,6 +549,7 @@ async function handleSaveMemory(event) {
       category,
       description,
       photo_path: photoPath || null,
+      is_favorite: false,
     });
 
     if (error) {
@@ -392,8 +571,19 @@ async function applySession(session) {
 
   if (!session) {
     currentProfile = null;
+    currentMemories = [];
+    commentsByMemory = new Map();
     userChip.textContent = "Not signed in";
     memorySubtitle.textContent = "Synced across your shared space";
+    dashboardMemories.textContent = "0";
+    dashboardPhotos.textContent = "0";
+    dashboardFavorites.textContent = "0";
+    dashboardLatestTitle.textContent = "Nothing saved yet";
+    dashboardLatestMeta.textContent = "Once you add a memory, your newest story will appear here.";
+    flashbackTitle.textContent = "No flashback yet";
+    flashbackDescription.textContent =
+      "Memories from this same date in past years will appear here automatically.";
+    flashbackList.innerHTML = "";
     setUnlockedState(false);
     renderEmptyState("Sign in to open your shared memory vault.");
     setFeedback("");
@@ -411,7 +601,7 @@ async function applySession(session) {
     setUnlockedState(true);
     await fetchMemories();
     await subscribeToMemories();
-  } catch (error) {
+  } catch (_error) {
     setUnlockedState(false);
     setGateMessage("Your account exists, but the profile setup is missing. Run the Supabase SQL file first.");
   }
