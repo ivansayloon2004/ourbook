@@ -1,7 +1,8 @@
 const SUPABASE_URL = "https://fpboqmodxbyczocpsldx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
-const SHARED_PASSPHRASE = "iloveyou";
+const COUPLE_NAMES = "Ivan and Love";
+const SHARED_PASSPHRASE_HASH = "e4ad93ca07acb8d908a3aa41e920ea4f4ef4f26e7f86cf8291c5db289780a5ae";
 const GATE_SESSION_KEY = "storybook-shared-unlocked";
 
 const isConfigured =
@@ -19,6 +20,7 @@ const configBanner = document.getElementById("config-banner");
 const phraseForm = document.getElementById("phrase-form");
 const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
+const gateNames = document.getElementById("gate-names");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
 const profileForm = document.getElementById("profile-form");
@@ -171,6 +173,14 @@ function resetMilestoneForm() {
 
 function signedInUserName() {
   return currentProfile?.display_name || "one of you";
+}
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 async function createSignedUrls(paths) {
@@ -713,7 +723,8 @@ async function handlePhraseUnlock(event) {
     setGateMessage("Enter your shared phrase first.");
     return;
   }
-  if (phrase !== SHARED_PASSPHRASE) {
+  const hash = await sha256(phrase);
+  if (hash !== SHARED_PASSPHRASE_HASH) {
     setGateMessage("That phrase is not correct.");
     return;
   }
@@ -923,6 +934,7 @@ if (!isConfigured) {
 }
 
 renderEmptyState("Enter your shared phrase to open your storybook.");
+gateNames.textContent = COUPLE_NAMES;
 phraseForm.addEventListener("submit", handlePhraseUnlock);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);

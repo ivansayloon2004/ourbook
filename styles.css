@@ -122,6 +122,14 @@ body::after {
   font-weight: 700;
 }
 
+.gate-names {
+  margin: 0.4rem 0 0.9rem;
+  color: var(--rose);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .config-banner {
   margin-bottom: 1rem;
   padding: 0.95rem 1rem;
