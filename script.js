@@ -461,6 +461,7 @@ async function handleRegister(event) {
     email,
     password,
     options: {
+      emailRedirectTo: window.location.origin,
       data: {
         display_name: displayName,
         shared_code: sharedCode,
