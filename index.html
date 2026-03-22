@@ -42,25 +42,56 @@
         </div>
 
         <div class="gate-panels">
-          <form class="gate-form gate-form-single gate-form-tight" id="phrase-form">
+          <div class="gate-form gate-form-single gate-form-tight access-stack">
             <p class="gate-section-label">Shared Access</p>
             <h2>Open your couple space</h2>
             <p class="gate-section-copy">Use the phrase you already reserved.</p>
-            <label>
-              Shared phrase
-              <input
-                type="password"
-                id="shared-passphrase"
-                name="shared-passphrase"
-                placeholder="Enter your private phrase"
-                autocomplete="current-password"
-                required
-              />
-            </label>
-            <button class="button primary wide" type="submit">Open storybook</button>
-            <p class="gate-hint">Reserved phrases are protected and cannot be reused by another couple.</p>
-            <p class="gate-error" id="gate-error" aria-live="polite"></p>
-          </form>
+            <form id="phrase-form">
+              <label>
+                Shared phrase
+                <input
+                  type="password"
+                  id="shared-passphrase"
+                  name="shared-passphrase"
+                  placeholder="Enter your private phrase"
+                  autocomplete="current-password"
+                  required
+                />
+              </label>
+              <button class="button primary wide" type="submit">Open storybook</button>
+              <p class="gate-hint">Reserved phrases are protected and cannot be reused by another couple.</p>
+              <p class="gate-error" id="gate-error" aria-live="polite"></p>
+            </form>
+
+            <form class="admin-inline" id="admin-form">
+              <p class="gate-section-label admin-label">Admin</p>
+              <label>
+                Admin email
+                <input
+                  type="email"
+                  id="admin-email"
+                  name="admin-email"
+                  placeholder="admin@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </label>
+              <label>
+                Admin password
+                <input
+                  type="password"
+                  id="admin-password"
+                  name="admin-password"
+                  placeholder="Enter your admin password"
+                  autocomplete="current-password"
+                  required
+                />
+              </label>
+              <button class="button secondary wide" type="submit">Open admin panel</button>
+              <p class="gate-error" id="admin-error" aria-live="polite"></p>
+              <p class="gate-status" id="admin-status" aria-live="polite"></p>
+            </form>
+          </div>
 
           <form class="gate-form gate-form-compact gate-form-tight" id="register-form">
             <p class="gate-section-label">Reserve Space</p>
@@ -171,36 +202,6 @@
             <p class="gate-status" id="auth-status" aria-live="polite"></p>
           </form>
 
-          <form class="gate-form gate-form-wide gate-form-tight" id="admin-form">
-            <p class="gate-section-label">Admin Access</p>
-            <h2>Admin login</h2>
-            <p class="gate-section-copy">Use your admin email and password to manage all couple submissions.</p>
-            <label>
-              Admin email
-              <input
-                type="email"
-                id="admin-email"
-                name="admin-email"
-                placeholder="admin@example.com"
-                autocomplete="email"
-                required
-              />
-            </label>
-            <label>
-              Admin password
-              <input
-                type="password"
-                id="admin-password"
-                name="admin-password"
-                placeholder="Enter your admin password"
-                autocomplete="current-password"
-                required
-              />
-            </label>
-            <button class="button secondary wide" type="submit">Open admin panel</button>
-            <p class="gate-error" id="admin-error" aria-live="polite"></p>
-            <p class="gate-status" id="admin-status" aria-live="polite"></p>
-          </form>
         </div>
       </div>
     </section>

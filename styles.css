@@ -192,6 +192,26 @@ body::after {
   max-width: none;
 }
 
+.access-stack {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.access-stack form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-inline {
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.admin-label {
+  margin-top: 0.15rem;
+}
+
 .gate-form-wide {
   grid-column: auto;
 }
