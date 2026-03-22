@@ -19,14 +19,23 @@
   <body>
     <section class="privacy-gate" id="privacy-gate">
       <div class="gate-card">
-        <p class="eyebrow">Private Access</p>
-        <p class="gate-kicker">Our Storybook</p>
-        <h1>Secure access to your shared archive.</h1>
-        <p class="gate-names" id="gate-names">For the two of you</p>
-        <p class="gate-copy">
-          Reserve one unique couple phrase for your own private space, then use that same phrase on
-          both devices to open your shared archive.
-        </p>
+        <div class="gate-header">
+          <div>
+            <p class="eyebrow">Private Access</p>
+            <p class="gate-kicker">Our Storybook</p>
+            <h1>Secure access to your shared archive.</h1>
+            <p class="gate-names" id="gate-names">For the two of you</p>
+          </div>
+          <div class="gate-summary">
+            <p class="gate-copy">
+              1. Reserve one unique couple phrase.
+              <br />
+              2. Create your personal accounts.
+              <br />
+              3. Use the same phrase on both devices to open your space.
+            </p>
+          </div>
+        </div>
 
         <div class="config-banner" id="config-banner">
           Add your Supabase URL and anon key in <code>script.js</code> before the live app can talk
@@ -54,10 +63,10 @@
             <p class="gate-error" id="gate-error" aria-live="polite"></p>
           </form>
 
-          <form class="gate-form" id="register-form">
+          <form class="gate-form gate-form-compact" id="register-form">
             <p class="gate-section-label">Reserve Space</p>
             <h2>Register your couple phrase</h2>
-            <p class="gate-section-copy">Create one unique shared code and one strong phrase before either of you signs in.</p>
+            <p class="gate-section-copy">Reserve your shared code and phrase first.</p>
             <label>
               Couple title
               <input
@@ -103,15 +112,15 @@
               />
             </label>
             <button class="button secondary wide" type="submit">Reserve our phrase</button>
-            <p class="gate-hint">Make it hard: at least 14 characters with a mix of letters, numbers, and symbols.</p>
+            <p class="gate-hint">Use a strong phrase: 14+ characters, upper and lowercase letters, numbers, and a symbol.</p>
             <p class="gate-error" id="register-error" aria-live="polite"></p>
             <p class="gate-status" id="register-status" aria-live="polite"></p>
           </form>
 
-          <form class="gate-form gate-form-wide" id="auth-form">
+          <form class="gate-form gate-form-wide gate-form-compact" id="auth-form">
             <p class="gate-section-label">Cloud Sync</p>
             <h2>Create your personal login</h2>
-            <p class="gate-section-copy">After reserving your couple phrase, each of you should use your own email and password with the same shared space code.</p>
+            <p class="gate-section-copy">After reserving the phrase, both of you create your own login with the same shared code.</p>
             <label>
               Display name
               <input

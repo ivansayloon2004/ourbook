@@ -100,6 +100,20 @@ body::after {
   backdrop-filter: blur(18px);
 }
 
+.gate-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.9fr);
+  gap: 1.25rem;
+  align-items: end;
+}
+
+.gate-summary {
+  padding: 1rem 1.05rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
 .gate-card h1 {
   margin: 0;
   font-family: "Fraunces", serif;
@@ -146,12 +160,12 @@ body::after {
 
 .gate-copy {
   margin: 0.75rem 0 1.05rem;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 .gate-panels {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -161,7 +175,7 @@ body::after {
 }
 
 .gate-form-wide {
-  grid-column: auto;
+  grid-column: 1 / -1;
 }
 
 .gate-form {
@@ -178,7 +192,7 @@ body::after {
 .gate-form h2 {
   margin: 0 0 0.45rem;
   font-family: "Fraunces", serif;
-  font-size: 1.7rem;
+  font-size: 1.5rem;
 }
 
 .gate-section-label {
@@ -201,8 +215,25 @@ body::after {
   display: block;
   font-size: 0.88rem;
   font-weight: 700;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.75rem;
   color: var(--wine);
+}
+
+.gate-form-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 0.9rem;
+  align-content: start;
+}
+
+.gate-form-compact .gate-section-label,
+.gate-form-compact h2,
+.gate-form-compact .gate-section-copy,
+.gate-form-compact .gate-hint,
+.gate-form-compact .gate-error,
+.gate-form-compact .gate-status,
+.gate-form-compact button {
+  grid-column: 1 / -1;
 }
 
 .gate-hint {
@@ -1034,6 +1065,7 @@ select:focus {
 }
 
 @media (max-width: 960px) {
+  .gate-header,
   .topbar,
   .hero-panel,
   .stats-strip,
@@ -1086,6 +1118,10 @@ select:focus {
   .memory-list-wrap {
     padding: 1.2rem;
     border-radius: 1.4rem;
+  }
+
+  .gate-form-compact {
+    grid-template-columns: 1fr;
   }
 
   .hero-copy h2 {
