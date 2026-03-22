@@ -32,6 +32,10 @@ body {
   min-height: 100vh;
 }
 
+body.gate-open {
+  overflow: hidden;
+}
+
 body::before,
 body::after {
   content: "";
@@ -63,6 +67,72 @@ body::after {
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
   padding: 1.25rem 0 4rem;
+}
+
+.page-shell.locked {
+  visibility: hidden;
+  pointer-events: none;
+  max-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.privacy-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.privacy-gate.hidden {
+  display: none;
+}
+
+.gate-card {
+  width: min(540px, 100%);
+  padding: 2rem;
+  border-radius: 2rem;
+  background: rgba(255, 249, 244, 0.84);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.gate-card h1 {
+  margin: 0;
+  font-family: "Fraunces", serif;
+  font-size: clamp(2rem, 6vw, 3.6rem);
+  line-height: 0.98;
+}
+
+.gate-copy,
+.gate-hint,
+.gate-error {
+  color: var(--muted);
+}
+
+.gate-copy {
+  margin: 1rem 0 1.35rem;
+  line-height: 1.7;
+}
+
+.gate-form label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.gate-hint {
+  margin: 0.85rem 0 0;
+  font-size: 0.92rem;
+}
+
+.gate-error {
+  min-height: 1.4rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  color: #9c3147;
+  font-weight: 700;
 }
 
 .hero {
@@ -140,6 +210,18 @@ body::after {
   border-radius: 999px;
   font-weight: 700;
   backdrop-filter: blur(16px);
+}
+
+.pill-button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.topbar-actions {
+  display: flex;
+  justify-content: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .hero-panel {
@@ -516,6 +598,10 @@ select:focus {
     justify-self: start;
   }
 
+  .topbar-actions {
+    justify-content: start;
+  }
+
   .hero-copy h2 {
     max-width: 100%;
   }
@@ -528,6 +614,7 @@ select:focus {
 
   .hero-copy,
   .highlight-card,
+  .gate-card,
   .gallery-card,
   .memory-form,
   .memory-list-wrap {

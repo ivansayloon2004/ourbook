@@ -17,7 +17,35 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
+    <section class="privacy-gate" id="privacy-gate">
+      <div class="gate-card">
+        <p class="eyebrow">Private for two</p>
+        <h1>The two-person door to your story.</h1>
+        <p class="gate-copy">
+          This space is meant for the two of you. Use your shared passphrase to unlock the memory
+          vault for this session.
+        </p>
+
+        <form class="gate-form" id="gate-form">
+          <label>
+            Shared passphrase
+            <input
+              type="password"
+              id="passphrase"
+              name="passphrase"
+              placeholder="Enter your private phrase"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button class="button primary wide" type="submit">Unlock our story</button>
+          <p class="gate-hint">Change the passphrase in <code>script.js</code> before you deploy.</p>
+          <p class="gate-error" id="gate-error" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <div class="page-shell locked" id="app-shell" aria-hidden="true">
       <header class="hero">
         <nav class="topbar">
           <div class="brand">
@@ -27,7 +55,10 @@
               <h1>Our Storybook</h1>
             </div>
           </div>
-          <a class="pill-link" href="#memory-form">Add a memory</a>
+          <div class="topbar-actions">
+            <a class="pill-link" href="#memory-form">Add a memory</a>
+            <button class="pill-link pill-button" id="lock-site" type="button">Lock</button>
+          </div>
         </nav>
 
         <section class="hero-panel">
@@ -45,9 +76,9 @@
           </div>
 
           <aside class="highlight-card">
-            <p class="eyebrow">Today’s reminder</p>
+            <p class="eyebrow">Today's reminder</p>
             <blockquote>
-              “The best thing about us is how ordinary days become unforgettable.”
+              "The best thing about us is how ordinary days become unforgettable."
             </blockquote>
             <div class="highlight-grid">
               <article>
@@ -112,7 +143,7 @@
             </article>
             <article class="timeline-card">
               <span class="timeline-date">The first adventure</span>
-              <h4>A place that became “ours”</h4>
+              <h4>A place that became ours</h4>
               <p>
                 Whether it was a city, a cafe, or a rainy walk, this is where shared memories start
                 feeling like tradition.
@@ -159,16 +190,16 @@
             <article class="note-card">
               <p class="note-tag">Favorite thing</p>
               <p>
-                “Even your shortest good morning text somehow makes the whole day feel softer.”
+                "Even your shortest good morning text somehow makes the whole day feel softer."
               </p>
             </article>
             <article class="note-card">
               <p class="note-tag">Inside joke</p>
-              <p>“We said it once as a joke, and now it’s basically a language only we speak.”</p>
+              <p>"We said it once as a joke, and now it's basically a language only we speak."</p>
             </article>
             <article class="note-card">
               <p class="note-tag">Promise</p>
-              <p>“No matter how busy life gets, we keep making time for us on purpose.”</p>
+              <p>"No matter how busy life gets, we keep making time for us on purpose."</p>
             </article>
           </div>
         </section>

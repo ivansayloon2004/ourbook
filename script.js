@@ -1,4 +1,6 @@
 const storageKey = "storybook-memories";
+const sessionKey = "storybook-unlocked";
+const passphraseHash = "b9dfe142c20b69fc2867d923e82955b8eda47556d46268ab252aff52f7b5a4f0";
 
 const starterMemories = [
   {
@@ -15,11 +17,38 @@ const starterMemories = [
   },
 ];
 
+const gate = document.getElementById("privacy-gate");
+const appShell = document.getElementById("app-shell");
+const gateForm = document.getElementById("gate-form");
+const gateError = document.getElementById("gate-error");
+const passphraseInput = document.getElementById("passphrase");
+const lockButton = document.getElementById("lock-site");
 const form = document.getElementById("memory-form");
 const memoryList = document.getElementById("memory-list");
 const template = document.getElementById("memory-template");
 const clearButton = document.getElementById("clear-memories");
 const stats = document.querySelectorAll(".stat-number");
+let statsAnimated = false;
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function setUnlockedState(unlocked) {
+  gate.classList.toggle("hidden", unlocked);
+  appShell.classList.toggle("locked", !unlocked);
+  appShell.setAttribute("aria-hidden", String(!unlocked));
+  document.body.classList.toggle("gate-open", !unlocked);
+
+  if (unlocked && !statsAnimated) {
+    animateStats();
+    statsAnimated = true;
+  }
+}
 
 function getMemories() {
   const saved = window.localStorage.getItem(storageKey);
@@ -76,6 +105,10 @@ function renderMemories() {
 
 function animateStats() {
   stats.forEach((stat) => {
+    if (stat.dataset.animated === "true") {
+      return;
+    }
+
     const target = Number(stat.dataset.count || 0);
     let current = 0;
     const step = Math.max(1, Math.round(target / 36));
@@ -92,7 +125,35 @@ function animateStats() {
     };
 
     tick();
+    stat.dataset.animated = "true";
   });
+}
+
+async function handleUnlock(event) {
+  event.preventDefault();
+  gateError.textContent = "";
+
+  const guess = passphraseInput.value.trim();
+  if (!guess) {
+    gateError.textContent = "Enter your shared passphrase first.";
+    return;
+  }
+
+  const hash = await sha256(guess);
+  if (hash !== passphraseHash) {
+    gateError.textContent = "That passphrase is not right.";
+    return;
+  }
+
+  window.sessionStorage.setItem(sessionKey, "true");
+  gateForm.reset();
+  setUnlockedState(true);
+}
+
+function lockSite() {
+  window.sessionStorage.removeItem(sessionKey);
+  setUnlockedState(false);
+  passphraseInput.focus();
 }
 
 form.addEventListener("submit", (event) => {
@@ -123,4 +184,12 @@ clearButton.addEventListener("click", () => {
 });
 
 renderMemories();
-animateStats();
+gateForm.addEventListener("submit", handleUnlock);
+lockButton.addEventListener("click", lockSite);
+
+const isUnlocked = window.sessionStorage.getItem(sessionKey) === "true";
+setUnlockedState(isUnlocked);
+
+if (!isUnlocked) {
+  passphraseInput.focus();
+}
