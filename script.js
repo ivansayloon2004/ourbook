@@ -111,6 +111,26 @@ function setGateMessage(message = "", type = "error") {
   gateError.textContent = "";
 }
 
+function humanizeAuthError(message) {
+  const value = (message || "").toLowerCase();
+  if (value.includes("invalid login credentials")) {
+    return "Incorrect email or password.";
+  }
+  if (value.includes("email not confirmed")) {
+    return "This account still is not confirmed. Delete the old user in Supabase and register again, or disable email confirmation.";
+  }
+  if (value.includes("signup is disabled") || value.includes("email signups are disabled")) {
+    return "Email signups are currently disabled in Supabase. Turn the Email provider on.";
+  }
+  if (value.includes("user already registered")) {
+    return "This email is already registered. Try signing in or delete the old Supabase user and register again.";
+  }
+  if (value.includes("failed to fetch")) {
+    return "The app could not reach Supabase. Check your project URL, publishable key, and internet connection.";
+  }
+  return message || "Something went wrong while contacting Supabase.";
+}
+
 function formatDate(dateString) {
   const date = new Date(`${dateString}T00:00:00`);
   return new Intl.DateTimeFormat("en", {
@@ -742,7 +762,7 @@ async function handleRegister(event) {
   });
 
   if (error) {
-    setGateMessage(error.message);
+    setGateMessage(humanizeAuthError(error.message));
     return;
   }
   registerForm.reset();
@@ -766,7 +786,7 @@ async function handleLogin(event) {
   });
 
   if (error) {
-    setGateMessage(error.message);
+    setGateMessage(humanizeAuthError(error.message));
     return;
   }
   loginForm.reset();
