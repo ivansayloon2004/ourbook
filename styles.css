@@ -208,6 +208,10 @@ body::after {
   border-top: 1px solid rgba(109, 59, 71, 0.08);
 }
 
+.admin-inline.hidden {
+  display: none;
+}
+
 .admin-label {
   margin-top: 0.15rem;
 }
