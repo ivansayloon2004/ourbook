@@ -19,11 +19,12 @@
   <body>
     <section class="privacy-gate" id="privacy-gate">
       <div class="gate-card">
-        <p class="eyebrow">Private for two</p>
-        <h1>A real shared home for both of you.</h1>
+        <p class="eyebrow">Private Access</p>
+        <p class="gate-kicker">Our Storybook</p>
+        <h1>Secure access to your shared archive.</h1>
         <p class="gate-copy">
-          Create your own accounts, use the same shared space code, and keep memories synced across
-          every device you sign into.
+          Create individual accounts, connect them with the same shared space code, and keep your
+          memories available across every device you use.
         </p>
 
         <div class="config-banner" id="config-banner">
@@ -33,14 +34,16 @@
 
         <div class="gate-panels">
           <form class="gate-form" id="register-form">
-            <h2>Create account</h2>
+            <p class="gate-section-label">Registration</p>
+            <h2>Create an account</h2>
+            <p class="gate-section-copy">Use your personal details and the agreed shared space code.</p>
             <label>
-              Your name
+              Full name
               <input
                 type="text"
                 id="register-name"
                 name="register-name"
-                placeholder="Ivan"
+                placeholder="Ivan Sayloon"
                 autocomplete="name"
                 required
               />
@@ -62,7 +65,7 @@
                 type="password"
                 id="register-password"
                 name="register-password"
-                placeholder="At least 8 characters"
+                placeholder="Minimum 8 characters"
                 autocomplete="new-password"
                 required
               />
@@ -78,12 +81,14 @@
                 required
               />
             </label>
-            <button class="button secondary wide" type="submit">Create my account</button>
+            <button class="button secondary wide" type="submit">Create account</button>
             <p class="gate-status" id="register-status" aria-live="polite"></p>
           </form>
 
           <form class="gate-form" id="login-form">
-            <h2>Sign in</h2>
+            <p class="gate-section-label">Sign In</p>
+            <h2>Access your account</h2>
+            <p class="gate-section-copy">Use the email address and password associated with your profile.</p>
             <label>
               Email
               <input
@@ -106,8 +111,8 @@
                 required
               />
             </label>
-            <button class="button primary wide" type="submit">Unlock our story</button>
-            <p class="gate-hint">Use the same shared space code during sign up so both accounts join the same memory vault.</p>
+            <button class="button primary wide" type="submit">Sign in</button>
+            <p class="gate-hint">Both accounts should use the same shared space code during registration to join the same archive.</p>
             <p class="gate-error" id="gate-error" aria-live="polite"></p>
           </form>
         </div>
