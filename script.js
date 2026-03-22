@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://fpbqmodxbyczocpsldx.supabase.co";
+﻿const SUPABASE_URL = "https://fpbqmodxbyczocpsldx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
 
@@ -153,7 +153,7 @@ function updateDashboard(memories) {
   }
 
   dashboardLatestTitle.textContent = latest.title;
-  dashboardLatestMeta.textContent = `${formatDate(latest.memory_date)} · added by ${latest.author_name}`;
+  dashboardLatestMeta.textContent = `${formatDate(latest.memory_date)} Â· added by ${latest.author_name}`;
 }
 
 async function createPhotoUrls(memories) {
@@ -630,3 +630,4 @@ if (isConfigured) {
     applySession(session);
   });
 }
+
