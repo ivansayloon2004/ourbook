@@ -294,6 +294,7 @@ body::after {
 .hero-panel,
 .stats-strip,
 .dashboard-grid,
+.control-grid,
 .timeline,
 .gallery-grid,
 .notes-grid,
@@ -546,6 +547,45 @@ select {
 
 .dashboard-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.control-section {
+  margin-top: 2.5rem;
+}
+
+.control-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.control-card h4 {
+  margin: 0 0 0.45rem;
+  font-family: "Fraunces", serif;
+  font-size: 1.35rem;
+}
+
+.control-actions {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.control-output {
+  font-size: 0.92rem;
+}
+
+.control-status {
+  min-height: 1.4rem;
+  margin: 0.8rem 0 0;
+  color: var(--wine);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.security-list {
+  margin: 0.85rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .dashboard-card,
@@ -1098,6 +1138,7 @@ select:focus {
   .hero-panel,
   .stats-strip,
   .dashboard-grid,
+  .control-grid,
   .profile-layout,
   .filter-grid,
   .timeline,

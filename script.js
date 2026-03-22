@@ -75,6 +75,13 @@ const profileAnniversaryDays = document.getElementById("profile-anniversary-days
 const profileMemoryCount = document.getElementById("profile-memory-count");
 const profileLetterCount = document.getElementById("profile-letter-count");
 const profilePinnedCount = document.getElementById("profile-pinned-count");
+const generateInviteButton = document.getElementById("generate-invite");
+const copyInviteButton = document.getElementById("copy-invite");
+const inviteLinkInput = document.getElementById("invite-link");
+const inviteStatus = document.getElementById("invite-status");
+const exportBackupButton = document.getElementById("export-backup");
+const exportStatus = document.getElementById("export-status");
+const securitySummary = document.getElementById("security-summary");
 const dashboardMemories = document.getElementById("dashboard-memories");
 const dashboardPhotos = document.getElementById("dashboard-photos");
 const dashboardFavorites = document.getElementById("dashboard-favorites");
@@ -94,6 +101,7 @@ let channels = [];
 let editingMemoryId = "";
 let editingMilestoneId = "";
 let currentMonth = new Date();
+let activeInviteToken = "";
 
 function setUnlockedState(unlocked) {
   gate.classList.toggle("hidden", unlocked);
@@ -166,6 +174,16 @@ function clearUnlockedCouple() {
 
 function updateGateNames(name = "") {
   gateNames.textContent = name || DEFAULT_GATE_NAMES;
+}
+
+function setInviteStatus(message = "", type = "muted") {
+  inviteStatus.textContent = message;
+  inviteStatus.style.color = type === "error" ? "#9c3147" : type === "success" ? "#2f6c50" : "";
+}
+
+function setExportStatus(message = "", type = "muted") {
+  exportStatus.textContent = message;
+  exportStatus.style.color = type === "error" ? "#9c3147" : type === "success" ? "#2f6c50" : "";
 }
 
 function formatDate(dateString) {
@@ -245,17 +263,9 @@ function signedInUserName() {
   return currentProfile?.display_name || "one of you";
 }
 
-async function sha256(value) {
-  const bytes = new TextEncoder().encode(value);
-  const hashBuffer = await window.crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function findCoupleSpaceByPhrase(phraseHash) {
-  const { data, error } = await supabaseClient.rpc("find_couple_space_by_phrase", {
-    input_phrase_hash: phraseHash,
+async function findCoupleSpaceByPhrase(phrase) {
+  const { data, error } = await supabaseClient.rpc("verify_couple_phrase", {
+    input_phrase: phrase,
   });
   if (error) throw error;
   return Array.isArray(data) ? data[0] : data;
@@ -264,6 +274,23 @@ async function findCoupleSpaceByPhrase(phraseHash) {
 async function findCoupleSpaceByCode(sharedCode) {
   const { data, error } = await supabaseClient.rpc("find_couple_space_by_code", {
     input_shared_code: sharedCode,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function createInviteLinkForCurrentCouple() {
+  const { data, error } = await supabaseClient.rpc("create_couple_invite", {
+    input_shared_code: currentProfile.shared_code,
+    input_expires_hours: 72,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function claimInviteToken(token) {
+  const { data, error } = await supabaseClient.rpc("claim_couple_invite", {
+    input_token: token,
   });
   if (error) throw error;
   return Array.isArray(data) ? data[0] : data;
@@ -575,6 +602,9 @@ function populateProfileForm() {
   heroTitle.textContent = currentProfile?.partner_names || "Keep your best moments, milestones, and rituals beautifully in sync.";
   heroQuote.textContent = currentProfile?.hero_quote || "Built like a scrapbook and a journal at the same time, this little website lets you celebrate what already happened and keep adding to your story as it grows.";
   profileSummary.textContent = currentProfile?.partner_names ? `${currentProfile.partner_names}${currentProfile.anniversary_date ? ` | Anniversary ${formatDate(currentProfile.anniversary_date)}` : ""}` : "Set your names, anniversary, and couple quote below.";
+  securitySummary.textContent = currentProfile?.shared_code
+    ? `Your shared code "${currentProfile.shared_code}" uses a reserved phrase verified on the server before anyone can enter this archive.`
+    : "Your couple phrase is protected with server-side hashing and unique reservation checks.";
 }
 
 async function loadProfile(userId) {
@@ -805,6 +835,68 @@ async function deleteMilestone(milestoneId) {
   await fetchMemories();
 }
 
+async function handleGenerateInvite() {
+  if (!currentProfile || !currentSession) {
+    setInviteStatus("Sign in before creating an invite link.", "error");
+    return;
+  }
+
+  setInviteStatus("Creating invite link...", "success");
+  try {
+    const invite = await createInviteLinkForCurrentCouple();
+    activeInviteToken = invite?.token || "";
+    const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(activeInviteToken)}`;
+    inviteLinkInput.value = inviteLink;
+    setInviteStatus("Invite link created. Share it privately with your partner.", "success");
+  } catch (error) {
+    setInviteStatus(error.message || "Could not create an invite link yet.", "error");
+  }
+}
+
+async function handleCopyInvite() {
+  if (!inviteLinkInput.value) {
+    setInviteStatus("Create an invite link first.", "error");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(inviteLinkInput.value);
+    setInviteStatus("Invite link copied.", "success");
+  } catch (_error) {
+    inviteLinkInput.select();
+    setInviteStatus("Copy failed automatically. The link is highlighted for manual copy.", "error");
+  }
+}
+
+function handleExportBackup() {
+  if (!currentProfile || !currentSession) {
+    setExportStatus("Sign in before exporting your archive.", "error");
+    return;
+  }
+
+  const backup = {
+    exported_at: new Date().toISOString(),
+    couple_profile: currentProfile,
+    memories: currentMemories,
+    milestones: currentMilestones,
+    private_letters: currentLetters,
+    comments_by_memory: Object.fromEntries(commentsByMemory),
+    reactions_by_memory: Object.fromEntries(reactionsByMemory),
+  };
+
+  const fileName = `${currentProfile.shared_code || "storybook"}-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setExportStatus("Backup downloaded.", "success");
+}
+
 async function handlePhraseUnlock(event) {
   event.preventDefault();
   if (!supabaseClient) {
@@ -816,10 +908,9 @@ async function handlePhraseUnlock(event) {
     setGateMessage("Enter your shared phrase first.");
     return;
   }
-  const hash = await sha256(phrase);
   let reservedSpace;
   try {
-    reservedSpace = await findCoupleSpaceByPhrase(hash);
+    reservedSpace = await findCoupleSpaceByPhrase(phrase);
   } catch (error) {
     setGateMessage(error.message || "We could not verify that phrase right now.");
     return;
@@ -871,13 +962,12 @@ async function handleRegisterPhrase(event) {
     return;
   }
 
-  const phraseHash = await sha256(phrase);
   setRegisterMessage("", "success");
   registerStatus.textContent = "Reserving your couple phrase...";
 
   const { data, error } = await supabaseClient.rpc("reserve_couple_space", {
     input_shared_code: sharedCode,
-    input_phrase_hash: phraseHash,
+    input_phrase: phrase,
     input_couple_title: coupleTitle,
   });
 
@@ -902,6 +992,9 @@ async function handleSignOut() {
   }
   setUnlockedState(false);
   setAuthMessage("");
+  setInviteStatus("");
+  setExportStatus("");
+  inviteLinkInput.value = "";
   updateGateNames("");
   sharedPassphraseInput.focus();
 }
@@ -1143,6 +1236,10 @@ async function applySession(session) {
     dashboardAlbums.textContent = "0";
     dashboardLatestTitle.textContent = "Nothing saved yet";
     dashboardLatestMeta.textContent = "Once you add a memory, your newest story will appear here.";
+    securitySummary.textContent = "Your couple phrase is protected with server-side hashing and unique reservation checks.";
+    inviteLinkInput.value = "";
+    setInviteStatus("");
+    setExportStatus("");
     flashbackTitle.textContent = "No flashback yet";
     flashbackDescription.textContent = "Memories from this same date in past years will appear here automatically.";
     flashbackList.innerHTML = "";
@@ -1195,6 +1292,29 @@ async function applyGateUnlock() {
   await applySession(data.session);
 }
 
+async function applyInviteFromUrl() {
+  if (!supabaseClient) return;
+  const url = new URL(window.location.href);
+  const inviteToken = url.searchParams.get("invite");
+  if (!inviteToken) return;
+
+  try {
+    const invite = await claimInviteToken(inviteToken);
+    if (invite?.shared_code) {
+      authSharedCodeInput.value = invite.shared_code;
+      registerSharedCodeInput.value = invite.shared_code;
+      updateGateNames(invite.couple_title || "");
+      setAuthMessage("Invite accepted. Finish creating or signing in to your personal account below.", "success");
+      setGateMessage("Your invite is ready. Use the shared code already filled in below.", "success");
+    }
+  } catch (error) {
+    setGateMessage(error.message || "That invite link is invalid or has expired.");
+  } finally {
+    url.searchParams.delete("invite");
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
+  }
+}
+
 if (!isConfigured) {
   configBanner.classList.remove("hidden");
   renderEmptyState("Add your Supabase configuration to start syncing real memories.");
@@ -1227,8 +1347,12 @@ calendarNext.addEventListener("click", () => {
   currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
   renderCalendar();
 });
+generateInviteButton.addEventListener("click", handleGenerateInvite);
+copyInviteButton.addEventListener("click", handleCopyInvite);
+exportBackupButton.addEventListener("click", handleExportBackup);
 
 if (isConfigured) {
+  applyInviteFromUrl();
   applyGateUnlock();
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (window.sessionStorage.getItem(GATE_SESSION_KEY) === "true") {

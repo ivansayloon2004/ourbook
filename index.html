@@ -281,6 +281,48 @@
           </div>
         </section>
 
+        <section class="control-section">
+          <div class="section-heading">
+            <p class="eyebrow">Sharing And Safety</p>
+            <h3>Invite, protect, and back up your space</h3>
+          </div>
+
+          <div class="control-grid">
+            <article class="dashboard-card control-card">
+              <p class="dashboard-label">Invite link</p>
+              <h4>Bring your partner in</h4>
+              <p>Create a private invite link that prefills your shared space code for the other person.</p>
+              <div class="control-actions">
+                <button class="button secondary wide" id="generate-invite" type="button">Create invite link</button>
+                <input class="control-output" id="invite-link" type="text" readonly placeholder="Your private invite link will appear here." />
+                <button class="clear-button" id="copy-invite" type="button">Copy link</button>
+              </div>
+              <p class="control-status" id="invite-status" aria-live="polite"></p>
+            </article>
+
+            <article class="dashboard-card control-card">
+              <p class="dashboard-label">Security</p>
+              <h4>Phrase protection</h4>
+              <p id="security-summary">Your couple phrase is protected with server-side hashing and unique reservation checks.</p>
+              <ul class="security-list">
+                <li>Unique shared code per couple</li>
+                <li>Server-side phrase hashing with salt</li>
+                <li>Single-use style invite links with expiry</li>
+              </ul>
+            </article>
+
+            <article class="dashboard-card control-card">
+              <p class="dashboard-label">Backup</p>
+              <h4>Export your archive</h4>
+              <p>Download your profile, memories, milestones, letters, comments, and reactions in one JSON file.</p>
+              <div class="control-actions">
+                <button class="button primary wide" id="export-backup" type="button">Download backup</button>
+              </div>
+              <p class="control-status" id="export-status" aria-live="polite"></p>
+            </article>
+          </div>
+        </section>
+
         <section class="profile-section">
           <div class="section-heading">
             <p class="eyebrow">Profile</p>
