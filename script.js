@@ -217,7 +217,13 @@ function setAdminAccessExpanded(expanded) {
   if (!expanded) {
     adminConfirmWrap.classList.add("hidden");
     adminPasswordConfirmInput.value = "";
+    return;
   }
+
+  adminForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  window.setTimeout(() => {
+    adminEmailInput.focus();
+  }, 180);
 }
 
 function resetAdminAccessForms() {
