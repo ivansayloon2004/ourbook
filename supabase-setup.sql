@@ -24,6 +24,16 @@ create table if not exists public.couple_invites (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.admin_users (
+  email text primary key,
+  role text not null default 'owner',
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+insert into public.admin_users (email, role)
+values ('ivansayloon20@gmail.com', 'owner')
+on conflict (email) do nothing;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
@@ -150,6 +160,20 @@ language sql
 immutable
 as $$
   select encode(digest(coalesce(input_phrase, '') || ':' || coalesce(input_salt, ''), 'sha256'), 'hex')
+$$;
+
+create or replace function public.current_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.admin_users
+    where lower(admin_users.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  )
 $$;
 
 create or replace function public.reserve_couple_space(
@@ -314,6 +338,113 @@ begin
 end;
 $$;
 
+create or replace function public.admin_site_overview()
+returns table (
+  total_couples bigint,
+  total_profiles bigint,
+  total_memories bigint,
+  total_letters bigint
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  select
+    (select count(*) from public.couple_spaces),
+    (select count(*) from public.profiles),
+    (select count(*) from public.memories),
+    (select count(*) from public.private_letters);
+end;
+$$;
+
+create or replace function public.admin_couple_spaces()
+returns table (
+  shared_code text,
+  couple_title text,
+  profile_count bigint,
+  memory_count bigint,
+  letter_count bigint
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  select
+    spaces.shared_code,
+    spaces.couple_title,
+    count(distinct profiles.id) as profile_count,
+    count(distinct memories.id) as memory_count,
+    count(distinct letters.id) as letter_count
+  from public.couple_spaces spaces
+  left join public.profiles profiles on profiles.shared_code = spaces.shared_code
+  left join public.memories memories on memories.couple_code = spaces.shared_code
+  left join public.private_letters letters on letters.couple_code = spaces.shared_code
+  group by spaces.shared_code, spaces.couple_title
+  order by spaces.created_at desc;
+end;
+$$;
+
+create or replace function public.admin_recent_memories()
+returns table (
+  id uuid,
+  shared_code text,
+  title text,
+  description text,
+  author_name text,
+  memory_date date,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  select
+    memories.id,
+    memories.couple_code as shared_code,
+    memories.title,
+    memories.description,
+    memories.author_name,
+    memories.memory_date,
+    memories.created_at
+  from public.memories memories
+  order by memories.created_at desc
+  limit 30;
+end;
+$$;
+
+create or replace function public.admin_delete_memory(input_memory_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  delete from public.memories where memories.id = input_memory_id;
+end;
+$$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
@@ -321,6 +452,7 @@ for each row execute procedure public.handle_new_user();
 
 alter table public.couple_spaces enable row level security;
 alter table public.couple_invites enable row level security;
+alter table public.admin_users enable row level security;
 alter table public.profiles enable row level security;
 alter table public.memories enable row level security;
 alter table public.memory_comments enable row level security;
@@ -333,6 +465,11 @@ grant execute on function public.verify_couple_phrase(text) to anon, authenticat
 grant execute on function public.find_couple_space_by_code(text) to anon, authenticated;
 grant execute on function public.create_couple_invite(text, integer) to authenticated;
 grant execute on function public.claim_couple_invite(text) to anon, authenticated;
+grant execute on function public.current_is_admin() to authenticated;
+grant execute on function public.admin_site_overview() to authenticated;
+grant execute on function public.admin_couple_spaces() to authenticated;
+grant execute on function public.admin_recent_memories() to authenticated;
+grant execute on function public.admin_delete_memory(uuid) to authenticated;
 
 drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own"

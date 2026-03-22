@@ -21,6 +21,7 @@ const configBanner = document.getElementById("config-banner");
 const phraseForm = document.getElementById("phrase-form");
 const registerForm = document.getElementById("register-form");
 const authForm = document.getElementById("auth-form");
+const adminForm = document.getElementById("admin-form");
 const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
 const registerCoupleTitleInput = document.getElementById("register-couple-title");
@@ -35,9 +36,14 @@ const authEmailInput = document.getElementById("auth-email");
 const authPasswordInput = document.getElementById("auth-password");
 const authError = document.getElementById("auth-error");
 const authStatus = document.getElementById("auth-status");
+const adminEmailInput = document.getElementById("admin-email");
+const adminPasswordInput = document.getElementById("admin-password");
+const adminError = document.getElementById("admin-error");
+const adminStatus = document.getElementById("admin-status");
 const gateNames = document.getElementById("gate-names");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
+const adminSection = document.getElementById("admin-section");
 const profileForm = document.getElementById("profile-form");
 const milestoneForm = document.getElementById("milestone-form");
 const letterForm = document.getElementById("letter-form");
@@ -82,6 +88,12 @@ const inviteStatus = document.getElementById("invite-status");
 const exportBackupButton = document.getElementById("export-backup");
 const exportStatus = document.getElementById("export-status");
 const securitySummary = document.getElementById("security-summary");
+const adminTotalCouples = document.getElementById("admin-total-couples");
+const adminTotalProfiles = document.getElementById("admin-total-profiles");
+const adminTotalMemories = document.getElementById("admin-total-memories");
+const adminTotalLetters = document.getElementById("admin-total-letters");
+const adminCoupleList = document.getElementById("admin-couple-list");
+const adminMemoryList = document.getElementById("admin-memory-list");
 const dashboardMemories = document.getElementById("dashboard-memories");
 const dashboardPhotos = document.getElementById("dashboard-photos");
 const dashboardFavorites = document.getElementById("dashboard-favorites");
@@ -102,6 +114,7 @@ let editingMemoryId = "";
 let editingMilestoneId = "";
 let currentMonth = new Date();
 let activeInviteToken = "";
+let currentIsAdmin = false;
 
 function setUnlockedState(unlocked) {
   gate.classList.toggle("hidden", unlocked);
@@ -148,6 +161,17 @@ function setRegisterMessage(message = "", type = "error") {
   registerStatus.textContent = "";
 }
 
+function setAdminMessage(message = "", type = "error") {
+  if (type === "success") {
+    adminStatus.textContent = message;
+    adminError.textContent = "";
+    return;
+  }
+
+  adminError.textContent = message;
+  adminStatus.textContent = "";
+}
+
 function isGateUnlocked() {
   return window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
 }
@@ -174,6 +198,14 @@ function clearUnlockedCouple() {
 
 function updateGateNames(name = "") {
   gateNames.textContent = name || DEFAULT_GATE_NAMES;
+}
+
+function setAdminMode(enabled) {
+  currentIsAdmin = enabled;
+  adminSection.classList.toggle("hidden", !enabled);
+  document.querySelectorAll(".couple-only").forEach((node) => {
+    node.classList.toggle("hidden", enabled);
+  });
 }
 
 function setInviteStatus(message = "", type = "muted") {
@@ -222,6 +254,60 @@ function escapeHtml(value) {
 
 function renderEmptyState(message = "No saved memories yet. Add your first one and start your archive.") {
   memoryList.innerHTML = `<div class="memory-empty">${message}</div>`;
+}
+
+function renderAdminCouples(couples) {
+  adminCoupleList.innerHTML = "";
+  if (!couples.length) {
+    adminCoupleList.innerHTML = '<div class="memory-empty">No couple spaces found yet.</div>';
+    return;
+  }
+
+  couples.forEach((couple) => {
+    const node = document.createElement("article");
+    node.className = "memory-entry";
+    node.innerHTML = `
+      <div class="memory-entry-top">
+        <strong>${escapeHtml(couple.couple_title || couple.shared_code)}</strong>
+        <span>${escapeHtml(couple.shared_code)}</span>
+      </div>
+      <p class="memory-meta">Members: ${couple.profile_count} | Memories: ${couple.memory_count} | Letters: ${couple.letter_count}</p>
+    `;
+    adminCoupleList.appendChild(node);
+  });
+}
+
+function renderAdminMemories(memories) {
+  adminMemoryList.innerHTML = "";
+  if (!memories.length) {
+    adminMemoryList.innerHTML = '<div class="memory-empty">No recent submissions yet.</div>';
+    return;
+  }
+
+  memories.forEach((memory) => {
+    const node = document.createElement("article");
+    node.className = "memory-entry";
+    node.innerHTML = `
+      <div class="memory-entry-top">
+        <strong>${escapeHtml(memory.title)}</strong>
+        <span>${escapeHtml(memory.shared_code)}</span>
+      </div>
+      <p class="memory-description">${escapeHtml(memory.description || "")}</p>
+      <p class="memory-meta">By ${escapeHtml(memory.author_name || "Unknown")} | ${formatDate(memory.memory_date)}</p>
+      <div class="memory-actions">
+        <button class="clear-button admin-delete-memory" type="button">Delete submission</button>
+      </div>
+    `;
+    node.querySelector(".admin-delete-memory").addEventListener("click", async () => {
+      try {
+        await deleteMemoryAsAdmin(memory.id);
+        await loadAdminData();
+      } catch (error) {
+        setAdminMessage(error.message || "Could not delete that submission.");
+      }
+    });
+    adminMemoryList.appendChild(node);
+  });
 }
 
 function animateStats() {
@@ -294,6 +380,37 @@ async function claimInviteToken(token) {
   });
   if (error) throw error;
   return Array.isArray(data) ? data[0] : data;
+}
+
+async function fetchAdminOverview() {
+  const { data, error } = await supabaseClient.rpc("admin_site_overview");
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function fetchAdminCouples() {
+  const { data, error } = await supabaseClient.rpc("admin_couple_spaces");
+  if (error) throw error;
+  return data || [];
+}
+
+async function fetchAdminRecentMemories() {
+  const { data, error } = await supabaseClient.rpc("admin_recent_memories");
+  if (error) throw error;
+  return data || [];
+}
+
+async function checkAdminAccess() {
+  const { data, error } = await supabaseClient.rpc("current_is_admin");
+  if (error) throw error;
+  return Boolean(data);
+}
+
+async function deleteMemoryAsAdmin(memoryId) {
+  const { error } = await supabaseClient.rpc("admin_delete_memory", {
+    input_memory_id: memoryId,
+  });
+  if (error) throw error;
 }
 
 async function createSignedUrls(paths) {
@@ -897,6 +1014,21 @@ function handleExportBackup() {
   setExportStatus("Backup downloaded.", "success");
 }
 
+async function loadAdminData() {
+  const [overview, couples, memories] = await Promise.all([
+    fetchAdminOverview(),
+    fetchAdminCouples(),
+    fetchAdminRecentMemories(),
+  ]);
+
+  adminTotalCouples.textContent = String(overview?.total_couples || 0);
+  adminTotalProfiles.textContent = String(overview?.total_profiles || 0);
+  adminTotalMemories.textContent = String(overview?.total_memories || 0);
+  adminTotalLetters.textContent = String(overview?.total_letters || 0);
+  renderAdminCouples(couples);
+  renderAdminMemories(memories);
+}
+
 async function handlePhraseUnlock(event) {
   event.preventDefault();
   if (!supabaseClient) {
@@ -992,6 +1124,7 @@ async function handleSignOut() {
   }
   setUnlockedState(false);
   setAuthMessage("");
+  setAdminMessage("");
   setInviteStatus("");
   setExportStatus("");
   inviteLinkInput.value = "";
@@ -1093,6 +1226,49 @@ async function handleAuthSubmit(event) {
   if (isGateUnlocked()) {
     await applySession(data.session);
   }
+}
+
+async function handleAdminSubmit(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAdminMessage("Supabase is required for admin login.");
+    return;
+  }
+
+  const email = adminEmailInput.value.trim();
+  const password = adminPasswordInput.value;
+  if (!email || !password) {
+    setAdminMessage("Enter your admin email and password.");
+    return;
+  }
+
+  setAdminMessage("", "success");
+  adminStatus.textContent = "Signing in to the admin panel...";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    setAdminMessage(error.message);
+    return;
+  }
+
+  let isAdmin = false;
+  try {
+    isAdmin = await checkAdminAccess();
+  } catch (accessError) {
+    await supabaseClient.auth.signOut();
+    setAdminMessage(accessError.message || "Admin checks are not ready yet. Run the latest SQL file first.");
+    return;
+  }
+
+  if (!isAdmin) {
+    await supabaseClient.auth.signOut();
+    setAdminMessage("This account is not allowed to open the admin panel.");
+    return;
+  }
+
+  clearUnlockedCouple();
+  setAdminMessage("Admin access granted.", "success");
+  await applySession(data.session);
 }
 
 async function handleProfileSave(event) {
@@ -1214,6 +1390,7 @@ async function handleMemorySave(event) {
 async function applySession(session) {
   currentSession = session;
   if (!session) {
+    currentIsAdmin = false;
     currentProfile = null;
     currentMemories = [];
     currentMilestones = [];
@@ -1247,12 +1424,24 @@ async function applySession(session) {
     milestoneList.innerHTML = "";
     letterList.innerHTML = "";
     setUnlockedState(false);
+    setAdminMode(false);
     renderEmptyState("Sign in to open your shared memory vault.");
     if (supabaseClient) await clearChannels();
     return;
   }
 
   try {
+    const isAdmin = await checkAdminAccess();
+    if (isAdmin) {
+      setAdminMode(true);
+      userChip.textContent = `${session.user.email || "Admin"} | admin`;
+      setUnlockedState(true);
+      await loadAdminData();
+      if (supabaseClient) await clearChannels();
+      return;
+    }
+
+    setAdminMode(false);
     await loadProfile(session.user.id);
     setUnlockedState(true);
     await fetchMemories();
@@ -1325,9 +1514,11 @@ if (!isConfigured) {
 renderEmptyState("Enter your shared phrase to open your storybook.");
 updateGateNames(savedCoupleTitle());
 authSharedCodeInput.value = savedSharedCode();
+setAdminMode(false);
 phraseForm.addEventListener("submit", handlePhraseUnlock);
 registerForm.addEventListener("submit", handleRegisterPhrase);
 authForm.addEventListener("submit", handleAuthSubmit);
+adminForm.addEventListener("submit", handleAdminSubmit);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);
 milestoneForm.addEventListener("submit", handleMilestoneSave);
@@ -1353,9 +1544,26 @@ exportBackupButton.addEventListener("click", handleExportBackup);
 
 if (isConfigured) {
   applyInviteFromUrl();
-  applyGateUnlock();
+  supabaseClient.auth.getSession().then(async ({ data }) => {
+    if (!data.session) {
+      await applyGateUnlock();
+      return;
+    }
+
+    try {
+      const isAdmin = await checkAdminAccess();
+      if (isAdmin) {
+        await applySession(data.session);
+        return;
+      }
+    } catch (_error) {
+      // Fall back to the normal couple flow below.
+    }
+
+    await applyGateUnlock();
+  });
   supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (window.sessionStorage.getItem(GATE_SESSION_KEY) === "true") {
+    if (currentIsAdmin || window.sessionStorage.getItem(GATE_SESSION_KEY) === "true") {
       applySession(session);
     }
   });

@@ -170,6 +170,37 @@
             <p class="gate-error" id="auth-error" aria-live="polite"></p>
             <p class="gate-status" id="auth-status" aria-live="polite"></p>
           </form>
+
+          <form class="gate-form gate-form-wide gate-form-tight" id="admin-form">
+            <p class="gate-section-label">Admin Access</p>
+            <h2>Admin login</h2>
+            <p class="gate-section-copy">Use your admin email and password to manage all couple submissions.</p>
+            <label>
+              Admin email
+              <input
+                type="email"
+                id="admin-email"
+                name="admin-email"
+                placeholder="admin@example.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <label>
+              Admin password
+              <input
+                type="password"
+                id="admin-password"
+                name="admin-password"
+                placeholder="Enter your admin password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button class="button secondary wide" type="submit">Open admin panel</button>
+            <p class="gate-error" id="admin-error" aria-live="polite"></p>
+            <p class="gate-status" id="admin-status" aria-live="polite"></p>
+          </form>
         </div>
       </div>
     </section>
@@ -186,12 +217,12 @@
           </div>
           <div class="topbar-actions">
             <span class="user-chip" id="user-chip">Not signed in</span>
-            <a class="pill-link" href="#memory-form">Add a memory</a>
+            <a class="pill-link couple-only" href="#memory-form">Add a memory</a>
             <button class="pill-link pill-button" id="sign-out" type="button">Sign out</button>
           </div>
         </nav>
 
-        <section class="hero-panel">
+        <section class="hero-panel couple-only">
           <div class="hero-copy">
             <p class="eyebrow">A shared home for your favorite moments</p>
             <h2 id="hero-title">Keep your best moments, milestones, and rituals beautifully in sync.</h2>
@@ -231,7 +262,7 @@
       </header>
 
       <main>
-        <section class="stats-strip">
+        <section class="stats-strip couple-only">
           <article>
             <span class="stat-number" data-count="128">0</span>
             <p>Photos worth framing</p>
@@ -246,7 +277,55 @@
           </article>
         </section>
 
-        <section class="dashboard-section">
+        <section class="admin-section hidden" id="admin-section">
+          <div class="section-heading">
+            <p class="eyebrow">Admin</p>
+            <h3>Manage couple spaces and submissions</h3>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="dashboard-card">
+              <p class="dashboard-label">Couple spaces</p>
+              <h4 id="admin-total-couples">0</h4>
+              <p>Reserved spaces currently stored in the app.</p>
+            </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Accounts</p>
+              <h4 id="admin-total-profiles">0</h4>
+              <p>Total member profiles across every couple space.</p>
+            </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Memories</p>
+              <h4 id="admin-total-memories">0</h4>
+              <p>Total submitted memories across the whole site.</p>
+            </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Letters</p>
+              <h4 id="admin-total-letters">0</h4>
+              <p>Total private letters stored across all couples.</p>
+            </article>
+          </div>
+
+          <div class="profile-layout admin-layout">
+            <section class="memory-list-wrap">
+              <div class="section-heading compact">
+                <p class="eyebrow">Couples</p>
+                <h3>All couple spaces</h3>
+              </div>
+              <div class="memory-list" id="admin-couple-list"></div>
+            </section>
+
+            <section class="memory-list-wrap">
+              <div class="section-heading compact">
+                <p class="eyebrow">Submissions</p>
+                <h3>Recent memory posts</h3>
+              </div>
+              <div class="memory-list" id="admin-memory-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="dashboard-section couple-only">
           <div class="section-heading">
             <p class="eyebrow">Dashboard</p>
             <h3>Your shared snapshot</h3>
@@ -281,7 +360,7 @@
           </div>
         </section>
 
-        <section class="control-section">
+        <section class="control-section couple-only">
           <div class="section-heading">
             <p class="eyebrow">Sharing And Safety</p>
             <h3>Invite, protect, and back up your space</h3>
@@ -323,7 +402,7 @@
           </div>
         </section>
 
-        <section class="profile-section">
+        <section class="profile-section couple-only">
           <div class="section-heading">
             <p class="eyebrow">Profile</p>
             <h3>Your couple profile and reminders</h3>
@@ -364,7 +443,7 @@
           </div>
         </section>
 
-        <section class="flashback-section">
+        <section class="flashback-section couple-only">
           <div class="section-heading">
             <p class="eyebrow">On this day</p>
             <h3>A little anniversary machine for your timeline</h3>
@@ -382,7 +461,7 @@
           </div>
         </section>
 
-        <section class="milestone-section" id="timeline">
+        <section class="milestone-section couple-only" id="timeline">
           <div class="section-heading">
             <p class="eyebrow">Timeline</p>
             <h3>Editable milestones for your story</h3>
@@ -411,7 +490,7 @@
           </div>
         </section>
 
-        <section class="filter-section">
+        <section class="filter-section couple-only">
           <div class="section-heading">
             <p class="eyebrow">Explore</p>
             <h3>Search, filter, and sort your archive</h3>
@@ -445,7 +524,7 @@
           </div>
         </section>
 
-        <section class="calendar-section" id="calendar-view">
+        <section class="calendar-section couple-only" id="calendar-view">
           <div class="section-heading">
             <p class="eyebrow">Calendar</p>
             <h3>Your archive by month</h3>
@@ -461,7 +540,7 @@
           </div>
         </section>
 
-        <section class="memory-vault" id="memory-vault">
+        <section class="memory-vault couple-only" id="memory-vault">
           <div class="section-heading">
             <p class="eyebrow">Memory vault</p>
             <h3>Create, edit, pin, and enrich your memories</h3>
