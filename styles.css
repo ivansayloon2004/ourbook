@@ -90,7 +90,7 @@ body::after {
 
 .gate-card {
   width: min(1120px, 100%);
-  padding: 1.45rem;
+  padding: 1.2rem;
   border-radius: 2rem;
   background:
     linear-gradient(180deg, rgba(255, 252, 248, 0.94), rgba(251, 243, 236, 0.9)),
@@ -103,21 +103,38 @@ body::after {
 .gate-header {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.9fr);
-  gap: 0.9rem;
+  gap: 0.75rem;
   align-items: end;
 }
 
 .gate-summary {
-  padding: 0.85rem 0.95rem;
-  border-radius: 1.2rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 1rem;
   background: rgba(255, 255, 255, 0.56);
   border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.gate-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.gate-steps span {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(109, 59, 71, 0.08);
+  color: var(--wine);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .gate-card h1 {
   margin: 0;
   font-family: "Fraunces", serif;
-  font-size: clamp(1.85rem, 4vw, 3rem);
+  font-size: clamp(1.6rem, 3.1vw, 2.6rem);
   line-height: 0.96;
   max-width: 12ch;
 }
@@ -159,15 +176,16 @@ body::after {
 }
 
 .gate-copy {
-  margin: 0.45rem 0 0;
-  line-height: 1.5;
+  margin: 0.35rem 0 0;
+  line-height: 1.42;
+  font-size: 0.92rem;
 }
 
 .gate-panels {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 0.85rem;
+  gap: 0.7rem;
+  margin-top: 0.7rem;
 }
 
 .gate-form-single {
@@ -179,8 +197,8 @@ body::after {
 }
 
 .gate-form {
-  padding: 1rem;
-  border-radius: 1.5rem;
+  padding: 0.85rem;
+  border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(109, 59, 71, 0.1);
 }
@@ -190,32 +208,32 @@ body::after {
 }
 
 .gate-form h2 {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.3rem;
   font-family: "Fraunces", serif;
-  font-size: 1.25rem;
+  font-size: 1.08rem;
 }
 
 .gate-section-label {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.3rem;
   color: var(--rose);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .gate-section-copy {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.5rem;
   color: var(--muted);
-  line-height: 1.45;
-  font-size: 0.9rem;
+  line-height: 1.35;
+  font-size: 0.84rem;
 }
 
 .gate-form label {
   display: block;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.45rem;
   color: var(--wine);
 }
 
@@ -237,22 +255,27 @@ body::after {
 }
 
 .gate-hint {
-  margin: 0.55rem 0 0;
-  font-size: 0.8rem;
-  line-height: 1.35;
+  margin: 0.4rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.28;
 }
 
 .gate-error,
 .gate-status {
-  min-height: 1.4rem;
-  margin: 0.35rem 0 0;
-  font-size: 0.82rem;
+  min-height: 1rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .gate-form input {
-  margin-top: 0.35rem;
-  padding: 0.75rem 0.85rem;
+  margin-top: 0.25rem;
+  padding: 0.68rem 0.78rem;
+}
+
+.gate-form-tight .button {
+  min-height: auto;
+  padding: 0.78rem 0.95rem;
 }
 
 .gate-error {
