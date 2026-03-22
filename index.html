@@ -63,7 +63,7 @@
               <p class="gate-error" id="gate-error" aria-live="polite"></p>
             </form>
 
-            <button class="button secondary wide" id="admin-access-toggle" type="button">Admin sign in</button>
+            <button class="button secondary wide" id="admin-access-toggle" type="button">Register admin</button>
 
             <form class="admin-inline hidden" id="admin-form">
               <p class="gate-section-label admin-label">Admin</p>
@@ -89,7 +89,10 @@
                   required
                 />
               </label>
-              <button class="button secondary wide" type="submit">Open admin panel</button>
+              <div class="form-actions gate-form-actions">
+                <button class="button primary wide" type="submit" data-admin-action="signup">Create admin account</button>
+                <button class="button secondary wide" type="submit" data-admin-action="signin">Open admin panel</button>
+              </div>
               <p class="gate-error" id="admin-error" aria-live="polite"></p>
               <p class="gate-status" id="admin-status" aria-live="polite"></p>
             </form>

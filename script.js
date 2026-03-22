@@ -228,7 +228,7 @@ function setAdminMode(enabled) {
 
 function setAdminAccessExpanded(expanded) {
   adminForm.classList.toggle("hidden", !expanded);
-  adminAccessToggle.textContent = expanded ? "Hide admin sign in" : "Admin sign in";
+  adminAccessToggle.textContent = expanded ? "Hide admin access" : "Register admin";
 }
 
 function setInviteStatus(message = "", type = "muted") {
@@ -1266,6 +1266,7 @@ async function handleAdminSubmit(event) {
     return;
   }
 
+  const action = event.submitter?.dataset.adminAction || "signin";
   const email = adminEmailInput.value.trim();
   const password = adminPasswordInput.value;
   if (!email || !password) {
@@ -1274,7 +1275,45 @@ async function handleAdminSubmit(event) {
   }
 
   setAdminMessage("", "success");
-  adminStatus.textContent = "Signing in to the admin panel...";
+  adminStatus.textContent = action === "signup" ? "Creating your admin account..." : "Signing in to the admin panel...";
+
+  if (action === "signup") {
+    const { data: allowed, error: allowedError } = await supabaseClient.rpc("admin_signup_allowed", {
+      input_email: email,
+    });
+
+    if (allowedError) {
+      setAdminMessage(allowedError.message || "We could not verify whether this email can become an admin.");
+      return;
+    }
+
+    if (!allowed) {
+      setAdminMessage("This email is not allowed to register as an admin.");
+      return;
+    }
+
+    const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          admin_registration: true,
+          display_name: "Admin",
+        },
+      },
+    });
+
+    if (signUpError) {
+      setAdminMessage(signUpError.message);
+      return;
+    }
+
+    if (!signUpData.session) {
+      setAdminMessage("Admin account created. Confirm the email first, then use Open admin panel.", "success");
+      adminPasswordInput.value = "";
+      return;
+    }
+  }
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {

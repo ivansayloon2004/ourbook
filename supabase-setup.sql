@@ -30,9 +30,13 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default timezone('utc', now())
 );
 
-insert into public.admin_users (email, role)
-values ('ivansayloon20@gmail.com', 'owner')
-on conflict (email) do nothing;
+delete from public.admin_users
+where lower(email) = 'ivansayloon20@gmail.com'
+  and not exists (
+    select 1
+    from auth.users
+    where lower(users.email) = lower(admin_users.email)
+  );
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -133,6 +137,9 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  wants_admin boolean := lower(coalesce(new.raw_user_meta_data->>'admin_registration', 'false')) = 'true';
+  normalized_email text := lower(trim(coalesce(new.email, '')));
 begin
   insert into public.profiles (id, display_name, shared_code)
   values (
@@ -141,6 +148,23 @@ begin
     coalesce(new.raw_user_meta_data->>'shared_code', 'our-story')
   )
   on conflict (id) do nothing;
+
+  if wants_admin and normalized_email <> '' then
+    if exists (
+      select 1
+      from public.admin_users
+      where lower(admin_users.email) = normalized_email
+    ) then
+      null;
+    elsif not exists (
+      select 1
+      from public.admin_users
+    ) then
+      insert into public.admin_users (email, role)
+      values (normalized_email, 'owner')
+      on conflict (email) do nothing;
+    end if;
+  end if;
 
   return new;
 end;
@@ -151,7 +175,7 @@ returns text
 language sql
 immutable
 as $$
-  select encode(digest(lower(trim(coalesce(input_phrase, ''))), 'sha256'), 'hex')
+  select encode(extensions.digest(lower(trim(coalesce(input_phrase, ''))), 'sha256'), 'hex')
 $$;
 
 create or replace function public.compute_phrase_hash(input_phrase text, input_salt text)
@@ -159,7 +183,7 @@ returns text
 language sql
 immutable
 as $$
-  select encode(digest(coalesce(input_phrase, '') || ':' || coalesce(input_salt, ''), 'sha256'), 'hex')
+  select encode(extensions.digest(coalesce(input_phrase, '') || ':' || coalesce(input_salt, ''), 'sha256'), 'hex')
 $$;
 
 create or replace function public.current_is_admin()
@@ -176,6 +200,24 @@ as $$
   )
 $$;
 
+create or replace function public.admin_signup_allowed(input_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when lower(trim(coalesce(input_email, ''))) = '' then false
+    when exists (
+      select 1
+      from public.admin_users
+      where lower(admin_users.email) = lower(trim(input_email))
+    ) then true
+    else not exists (select 1 from public.admin_users)
+  end
+$$;
+
 create or replace function public.reserve_couple_space(
   input_shared_code text,
   input_phrase text,
@@ -189,7 +231,7 @@ as $$
 declare
   normalized_code text := lower(regexp_replace(coalesce(input_shared_code, ''), '[^a-z0-9]+', '-', 'g'));
   normalized_title text := trim(coalesce(input_couple_title, ''));
-  generated_salt text := encode(gen_random_bytes(16), 'hex');
+  generated_salt text := encode(extensions.gen_random_bytes(16), 'hex');
   phrase_fingerprint text;
   secured_phrase_hash text;
 begin
@@ -243,7 +285,7 @@ as $$
     and couple_spaces.phrase_hash = public.compute_phrase_hash(input_phrase, couple_spaces.phrase_salt)
   ) or (
     couple_spaces.phrase_salt is null
-    and couple_spaces.phrase_hash = encode(digest(coalesce(input_phrase, ''), 'sha256'), 'hex')
+    and couple_spaces.phrase_hash = encode(extensions.digest(coalesce(input_phrase, ''), 'sha256'), 'hex')
   )
   limit 1
 $$;
@@ -268,7 +310,7 @@ set search_path = public
 as $$
 declare
   normalized_code text := lower(regexp_replace(coalesce(input_shared_code, ''), '[^a-z0-9]+', '-', 'g'));
-  generated_token text := encode(gen_random_bytes(24), 'hex');
+  generated_token text := encode(extensions.gen_random_bytes(24), 'hex');
   resolved_title text;
   resolved_expiry timestamptz := timezone('utc', now()) + make_interval(hours => greatest(coalesce(input_expires_hours, 72), 1));
 begin
@@ -466,6 +508,7 @@ grant execute on function public.find_couple_space_by_code(text) to anon, authen
 grant execute on function public.create_couple_invite(text, integer) to authenticated;
 grant execute on function public.claim_couple_invite(text) to anon, authenticated;
 grant execute on function public.current_is_admin() to authenticated;
+grant execute on function public.admin_signup_allowed(text) to anon, authenticated;
 grant execute on function public.admin_site_overview() to authenticated;
 grant execute on function public.admin_couple_spaces() to authenticated;
 grant execute on function public.admin_recent_memories() to authenticated;
