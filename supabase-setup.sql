@@ -529,6 +529,13 @@ to authenticated
 using (id = auth.uid())
 with check (id = auth.uid());
 
+drop policy if exists "profiles insert own" on public.profiles;
+create policy "profiles insert own"
+on public.profiles
+for insert
+to authenticated
+with check (id = auth.uid());
+
 drop policy if exists "memories shared read" on public.memories;
 create policy "memories shared read"
 on public.memories

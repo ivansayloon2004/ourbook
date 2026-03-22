@@ -231,6 +231,13 @@ function setAdminAccessExpanded(expanded) {
   adminAccessToggle.textContent = expanded ? "Hide admin access" : "Register admin";
 }
 
+function resetAdminAccessForms() {
+  adminForm.reset();
+  adminRegisterForm.reset();
+  setAdminMessage("");
+  setAdminRegisterMessage("");
+}
+
 function setInviteStatus(message = "", type = "muted") {
   inviteStatus.textContent = message;
   inviteStatus.style.color = type === "error" ? "#9c3147" : type === "success" ? "#2f6c50" : "";
@@ -756,7 +763,42 @@ function populateProfileForm() {
 }
 
 async function loadProfile(userId) {
-  const { data, error } = await supabaseClient.from("profiles").select("*").eq("id", userId).single();
+  let { data, error } = await supabaseClient.from("profiles").select("*").eq("id", userId).maybeSingle();
+
+  if (!data) {
+    const metadata = currentSession?.user?.user_metadata || {};
+    const email = currentSession?.user?.email || "";
+    const displayName = String(
+      metadata.display_name ||
+      metadata.full_name ||
+      authDisplayNameInput.value.trim() ||
+      email.split("@")[0] ||
+      "Admin"
+    ).trim();
+    const sharedCode = slugifyCode(
+      String(
+        metadata.shared_code ||
+        savedSharedCode() ||
+        authSharedCodeInput.value ||
+        "our-story"
+      )
+    ) || "our-story";
+    const coupleTitle = String(metadata.couple_title || savedCoupleTitle() || "").trim();
+
+    const insertResult = await supabaseClient.from("profiles").insert({
+      id: userId,
+      display_name: displayName,
+      shared_code: sharedCode,
+      couple_title: coupleTitle || null,
+    });
+
+    if (insertResult.error) {
+      throw insertResult.error;
+    }
+
+    ({ data, error } = await supabaseClient.from("profiles").select("*").eq("id", userId).single());
+  }
+
   if (error) throw error;
   currentProfile = data;
   userChip.textContent = `${data.display_name} | ${data.shared_code}`;
@@ -1155,11 +1197,12 @@ async function handleSignOut() {
   }
   setUnlockedState(false);
   setAuthMessage("");
-  setAdminMessage("");
+  resetAdminAccessForms();
   setInviteStatus("");
   setExportStatus("");
   inviteLinkInput.value = "";
   updateGateNames("");
+  setAdminAccessExpanded(false);
   sharedPassphraseInput.focus();
 }
 
@@ -1337,6 +1380,7 @@ async function handleAdminSubmit(event) {
   }
 
   clearUnlockedCouple();
+  resetAdminAccessForms();
   setAdminMessage("Admin access granted.", "success");
   await applySession(data.session);
 }
@@ -1403,6 +1447,7 @@ async function handleAdminRegister(event) {
 
   adminEmailInput.value = email;
   setAdminAccessExpanded(true);
+  adminRegisterEmailInput.value = "";
   adminRegisterPasswordInput.value = "";
   adminRegisterPasswordConfirmInput.value = "";
 
@@ -1427,6 +1472,7 @@ async function handleAdminRegister(event) {
   }
 
   clearUnlockedCouple();
+  resetAdminAccessForms();
   setAdminRegisterMessage("Admin account created. Opening the admin panel now.", "success");
   await applySession(data.session);
 }
@@ -1594,9 +1640,11 @@ async function applySession(session) {
     const isAdmin = await checkAdminAccess();
     if (isAdmin) {
       setAdminMode(true);
+      resetAdminAccessForms();
       userChip.textContent = `${session.user.email || "Admin"} | admin`;
       setUnlockedState(true);
       await loadAdminData();
+      adminSection.scrollIntoView({ behavior: "smooth", block: "start" });
       if (supabaseClient) await clearChannels();
       return;
     }
