@@ -126,7 +126,7 @@
             <span class="brand-mark">S</span>
             <div>
               <p class="eyebrow">For the two of you</p>
-              <h1>Our Storybook</h1>
+              <h1 id="brand-title">Our Storybook</h1>
             </div>
           </div>
           <div class="topbar-actions">
@@ -139,38 +139,36 @@
         <section class="hero-panel">
           <div class="hero-copy">
             <p class="eyebrow">A shared home for your favorite moments</p>
-            <h2>Keep your love notes, milestones, tiny rituals, and beautiful chaos in one place.</h2>
-            <p class="hero-text">
+            <h2 id="hero-title">Keep your best moments, milestones, and rituals beautifully in sync.</h2>
+            <p class="hero-text" id="hero-quote">
               Built like a scrapbook and a journal at the same time, this little website lets you
               celebrate what already happened and keep adding to your story as it grows.
             </p>
             <div class="hero-actions">
               <a class="button primary" href="#memory-vault">Open memory vault</a>
-              <a class="button secondary" href="#timeline">See your timeline</a>
+              <a class="button secondary" href="#calendar-view">See calendar view</a>
             </div>
           </div>
 
           <aside class="highlight-card">
-            <p class="eyebrow">Today's reminder</p>
-            <blockquote>
-              "The best thing about us is how ordinary days become unforgettable."
-            </blockquote>
+            <p class="eyebrow">Relationship profile</p>
+            <blockquote id="profile-summary">Set your names, anniversary, and couple quote below.</blockquote>
             <div class="highlight-grid">
               <article>
-                <span>01</span>
-                <p>First glance</p>
+                <span id="profile-anniversary-days">0</span>
+                <p>Days until anniversary</p>
               </article>
               <article>
-                <span>02</span>
-                <p>First date</p>
+                <span id="profile-memory-count">0</span>
+                <p>Memories saved</p>
               </article>
               <article>
-                <span>03</span>
-                <p>First trip</p>
+                <span id="profile-letter-count">0</span>
+                <p>Private letters</p>
               </article>
               <article>
-                <span>04</span>
-                <p>Still writing</p>
+                <span id="profile-pinned-count">0</span>
+                <p>Pinned memories</p>
               </article>
             </div>
           </aside>
@@ -215,11 +213,57 @@
               <h4 id="dashboard-favorites">0</h4>
               <p>The memories you marked as the ones you want to come back to first.</p>
             </article>
+            <article class="dashboard-card">
+              <p class="dashboard-label">Albums</p>
+              <h4 id="dashboard-albums">0</h4>
+              <p>Grouped collections for trips, anniversaries, and the seasons of your story.</p>
+            </article>
             <article class="dashboard-card wide-card">
               <p class="dashboard-label">Latest chapter</p>
               <h4 id="dashboard-latest-title">Nothing saved yet</h4>
               <p id="dashboard-latest-meta">Once you add a memory, your newest story will appear here.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="profile-section">
+          <div class="section-heading">
+            <p class="eyebrow">Profile</p>
+            <h3>Your couple profile and reminders</h3>
+          </div>
+
+          <div class="profile-layout">
+            <form class="profile-form" id="profile-form">
+              <label>
+                Couple title
+                <input type="text" id="couple-title" name="couple-title" placeholder="Ivan & Love" />
+              </label>
+              <label>
+                Partner names
+                <input type="text" id="partner-names" name="partner-names" placeholder="Ivan Sayloon & ..." />
+              </label>
+              <label>
+                Anniversary date
+                <input type="date" id="anniversary-date" name="anniversary-date" />
+              </label>
+              <label>
+                Hero quote
+                <textarea id="hero-quote-input" name="hero-quote-input" rows="3" placeholder="A line that feels like the two of you."></textarea>
+              </label>
+              <label>
+                Reminder lead time
+                <input type="number" id="reminder-days" name="reminder-days" min="1" max="60" value="7" />
+              </label>
+              <button class="button secondary wide" type="submit">Save profile</button>
+            </form>
+
+            <div class="profile-side">
+              <div class="section-heading compact">
+                <p class="eyebrow">Reminders</p>
+                <h3>Upcoming dates and notes</h3>
+              </div>
+              <div class="reminder-list" id="reminder-list"></div>
+            </div>
           </div>
         </section>
 
@@ -241,100 +285,94 @@
           </div>
         </section>
 
-        <section class="story-grid" id="timeline">
+        <section class="milestone-section" id="timeline">
           <div class="section-heading">
-            <p class="eyebrow">Your chapter map</p>
-            <h3>The timeline of your favorite days</h3>
+            <p class="eyebrow">Timeline</p>
+            <h3>Editable milestones for your story</h3>
           </div>
 
-          <div class="timeline">
-            <article class="timeline-card">
-              <span class="timeline-date">The beginning</span>
-              <h4>When everything quietly changed</h4>
-              <p>
-                Add the day you met, the song that was playing, or the tiny detail one of you still
-                remembers for no reason at all.
-              </p>
-            </article>
-            <article class="timeline-card">
-              <span class="timeline-date">The first yes</span>
-              <h4>Your first real date</h4>
-              <p>
-                Capture where you went, what you ate, and the awkward, sweet, unforgettable moments
-                in between.
-              </p>
-            </article>
-            <article class="timeline-card">
-              <span class="timeline-date">The first adventure</span>
-              <h4>A place that became ours</h4>
-              <p>
-                Whether it was a city, a cafe, or a rainy walk, this is where shared memories start
-                feeling like tradition.
-              </p>
-            </article>
+          <div class="profile-layout">
+            <form class="profile-form" id="milestone-form">
+              <input type="hidden" id="milestone-id" />
+              <label>
+                Milestone title
+                <input type="text" id="milestone-title" placeholder="First date" required />
+              </label>
+              <label>
+                Date
+                <input type="date" id="milestone-date" required />
+              </label>
+              <label>
+                Description
+                <textarea id="milestone-description" rows="3" placeholder="What made this day matter?"></textarea>
+              </label>
+              <button class="button secondary wide" id="save-milestone" type="submit">Save milestone</button>
+            </form>
+            <div class="memory-list-wrap">
+              <div class="memory-list" id="milestone-list"></div>
+            </div>
           </div>
         </section>
 
-        <section class="gallery-section">
+        <section class="filter-section">
           <div class="section-heading">
-            <p class="eyebrow">Moodboard</p>
-            <h3>A gallery for snapshots and soft moments</h3>
+            <p class="eyebrow">Explore</p>
+            <h3>Search, filter, and sort your archive</h3>
           </div>
 
-          <div class="gallery-grid">
-            <article class="gallery-card sunrise">
-              <div>
-                <p class="gallery-label">Golden hour</p>
-                <h4>That walk you never wanted to end</h4>
-              </div>
-            </article>
-            <article class="gallery-card night">
-              <div>
-                <p class="gallery-label">Late-night favorite</p>
-                <h4>Calls that turned into sunrise</h4>
-              </div>
-            </article>
-            <article class="gallery-card polaroid">
-              <div>
-                <p class="gallery-label">Tiny keepsakes</p>
-                <h4>Tickets, receipts, flowers, and proof</h4>
-              </div>
-            </article>
+          <div class="filter-grid">
+            <label>
+              Search
+              <input type="search" id="search-input" placeholder="Search titles, notes, songs, albums..." />
+            </label>
+            <label>
+              Category
+              <select id="filter-category">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <label>
+              Album
+              <select id="filter-album">
+                <option value="">All albums</option>
+              </select>
+            </label>
+            <label>
+              View
+              <select id="filter-view">
+                <option value="all">All memories</option>
+                <option value="favorites">Favorites</option>
+                <option value="pinned">Pinned</option>
+              </select>
+            </label>
           </div>
         </section>
 
-        <section class="notes-section">
+        <section class="calendar-section" id="calendar-view">
           <div class="section-heading">
-            <p class="eyebrow">Love language archive</p>
-            <h3>Notes worth keeping forever</h3>
+            <p class="eyebrow">Calendar</p>
+            <h3>Your archive by month</h3>
           </div>
 
-          <div class="notes-grid">
-            <article class="note-card">
-              <p class="note-tag">Favorite thing</p>
-              <p>
-                "Even your shortest good morning text somehow makes the whole day feel softer."
-              </p>
-            </article>
-            <article class="note-card">
-              <p class="note-tag">Inside joke</p>
-              <p>"We said it once as a joke, and now it's basically a language only we speak."</p>
-            </article>
-            <article class="note-card">
-              <p class="note-tag">Promise</p>
-              <p>"No matter how busy life gets, we keep making time for us on purpose."</p>
-            </article>
+          <div class="calendar-card">
+            <div class="calendar-toolbar">
+              <button class="clear-button" id="calendar-prev" type="button">Previous</button>
+              <h4 id="calendar-title">Month</h4>
+              <button class="clear-button" id="calendar-next" type="button">Next</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
           </div>
         </section>
 
         <section class="memory-vault" id="memory-vault">
           <div class="section-heading">
             <p class="eyebrow">Memory vault</p>
-            <h3>Add your own moments and keep them here</h3>
+            <h3>Create, edit, pin, and enrich your memories</h3>
           </div>
 
           <div class="vault-layout">
             <form class="memory-form" id="memory-form">
+              <input type="hidden" id="memory-id" />
               <label>
                 Memory title
                 <input type="text" id="title" name="title" placeholder="Movie night in the rain" required />
@@ -356,6 +394,16 @@
               </label>
 
               <label>
+                Album
+                <input type="text" id="album-name" name="album-name" placeholder="Anniversary Trip" />
+              </label>
+
+              <label>
+                Music link
+                <input type="url" id="song-link" name="song-link" placeholder="https://open.spotify.com/..." />
+              </label>
+
+              <label>
                 What happened?
                 <textarea
                   id="description"
@@ -366,12 +414,20 @@
                 ></textarea>
               </label>
 
-              <label>
-                Photo
-                <input type="file" id="photo" name="photo" accept="image/*" />
+              <label class="checkbox-row">
+                <input type="checkbox" id="is-pinned" name="is-pinned" />
+                Pin this memory to the top
               </label>
 
-              <button class="button primary wide" id="save-memory" type="submit">Save this memory</button>
+              <label>
+                Photos
+                <input type="file" id="photo" name="photo" accept="image/*" multiple />
+              </label>
+
+              <div class="form-actions">
+                <button class="button primary wide" id="save-memory" type="submit">Save memory</button>
+                <button class="button secondary wide" id="cancel-edit" type="button">Cancel edit</button>
+              </div>
             </form>
 
             <div class="memory-list-wrap">
@@ -387,21 +443,62 @@
             </div>
           </div>
         </section>
+
+        <section class="letters-section">
+          <div class="section-heading">
+            <p class="eyebrow">Private letters</p>
+            <h3>Keep quiet notes just for one another</h3>
+          </div>
+
+          <div class="profile-layout">
+            <form class="profile-form" id="letter-form">
+              <label>
+                Recipient
+                <input type="text" id="letter-recipient" placeholder="For my person" required />
+              </label>
+              <label>
+                Title
+                <input type="text" id="letter-title" placeholder="A small thank you" required />
+              </label>
+              <label>
+                Letter
+                <textarea id="letter-body" rows="5" placeholder="Write something only the two of you should keep." required></textarea>
+              </label>
+              <button class="button secondary wide" type="submit">Save letter</button>
+            </form>
+            <div class="memory-list-wrap">
+              <div class="memory-list" id="letter-list"></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
     <template id="memory-template">
       <article class="memory-entry">
         <div class="memory-entry-top">
-          <p class="memory-category"></p>
+          <div class="memory-badges">
+            <p class="memory-category"></p>
+            <p class="memory-badge hidden memory-pin">Pinned</p>
+            <p class="memory-badge hidden memory-album"></p>
+          </div>
           <time class="memory-date"></time>
         </div>
-        <img class="memory-image hidden" alt="Saved memory photo" />
+        <div class="memory-gallery"></div>
         <h4 class="memory-title"></h4>
+        <a class="memory-song hidden" target="_blank" rel="noreferrer">Open song memory</a>
         <p class="memory-description"></p>
         <p class="memory-meta"></p>
         <div class="memory-actions">
           <button class="favorite-button" type="button">Favorite</button>
+          <button class="favorite-button pin-toggle" type="button">Pin</button>
+          <button class="favorite-button edit-button" type="button">Edit</button>
+          <button class="favorite-button delete-button" type="button">Delete</button>
+        </div>
+        <div class="reaction-bar">
+          <button class="reaction-button" data-reaction="love" type="button">Love <span>0</span></button>
+          <button class="reaction-button" data-reaction="aww" type="button">Aww <span>0</span></button>
+          <button class="reaction-button" data-reaction="remember" type="button">Remember <span>0</span></button>
         </div>
         <div class="comment-section">
           <div class="comment-list"></div>
@@ -409,6 +506,33 @@
             <input class="comment-input" type="text" name="comment" placeholder="Add a little note..." maxlength="220" required />
             <button class="comment-button" type="submit">Post</button>
           </form>
+        </div>
+      </article>
+    </template>
+
+    <template id="milestone-template">
+      <article class="timeline-card">
+        <span class="timeline-date milestone-date"></span>
+        <h4 class="milestone-title"></h4>
+        <p class="milestone-description"></p>
+        <div class="memory-actions">
+          <button class="favorite-button milestone-edit" type="button">Edit</button>
+          <button class="favorite-button milestone-delete" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="letter-template">
+      <article class="memory-entry">
+        <div class="memory-entry-top">
+          <p class="memory-category">Private letter</p>
+          <span class="memory-date letter-recipient"></span>
+        </div>
+        <h4 class="letter-title"></h4>
+        <p class="memory-meta letter-meta"></p>
+        <p class="letter-body hidden"></p>
+        <div class="memory-actions">
+          <button class="favorite-button letter-toggle" type="button">Open</button>
         </div>
       </article>
     </template>

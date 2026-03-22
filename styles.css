@@ -825,6 +825,177 @@ select:focus {
   background: rgba(255, 255, 255, 0.34);
 }
 
+.profile-layout,
+.filter-grid,
+.calendar-toolbar,
+.memory-badges,
+.reaction-bar,
+.form-actions {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-section,
+.milestone-section,
+.filter-section,
+.calendar-section,
+.letters-section {
+  margin-top: 3rem;
+}
+
+.profile-layout {
+  grid-template-columns: 0.9fr 1.1fr;
+}
+
+.profile-form,
+.calendar-card,
+.profile-side {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  border-radius: 1.6rem;
+  padding: 1.4rem;
+}
+
+.compact {
+  margin-bottom: 0.9rem;
+}
+
+.filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.calendar-toolbar {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.calendar-toolbar h4 {
+  margin: 0;
+  text-align: center;
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.calendar-head,
+.calendar-day {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.calendar-head {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--wine);
+}
+
+.calendar-day {
+  min-height: 7rem;
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+.calendar-day.active {
+  background: rgba(200, 107, 121, 0.12);
+}
+
+.calendar-day.muted {
+  opacity: 0.28;
+}
+
+.calendar-day strong {
+  color: var(--wine);
+}
+
+.calendar-day span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.checkbox-row input {
+  width: auto;
+  margin: 0;
+}
+
+.form-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.memory-badges {
+  grid-template-columns: repeat(3, max-content);
+  align-items: center;
+}
+
+.memory-badge {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(109, 59, 71, 0.1);
+  color: var(--wine);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.memory-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+}
+
+.memory-song {
+  display: inline-flex;
+  margin: 0.25rem 0 0.8rem;
+  color: var(--rose);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.reaction-bar {
+  grid-template-columns: repeat(3, max-content);
+  margin-top: 0.85rem;
+}
+
+.reaction-button {
+  border: 1px solid rgba(109, 59, 71, 0.14);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--wine);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reaction-button.active {
+  background: rgba(200, 107, 121, 0.16);
+}
+
+.letter-body {
+  white-space: pre-wrap;
+}
+
 .pill-link:hover,
 .button:hover,
 .clear-button:hover {
@@ -847,6 +1018,8 @@ select:focus {
   .hero-panel,
   .stats-strip,
   .dashboard-grid,
+  .profile-layout,
+  .filter-grid,
   .timeline,
   .gallery-grid,
   .notes-grid,
@@ -870,6 +1043,10 @@ select:focus {
 
   .hero-copy h2 {
     max-width: 100%;
+  }
+
+  .form-actions {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -905,5 +1082,9 @@ select:focus {
 
   .comment-form {
     grid-template-columns: 1fr;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -4,8 +4,19 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
   shared_code text not null,
+  couple_title text,
+  partner_names text,
+  anniversary_date date,
+  hero_quote text,
+  reminder_days integer not null default 7,
   created_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.profiles add column if not exists couple_title text;
+alter table public.profiles add column if not exists partner_names text;
+alter table public.profiles add column if not exists anniversary_date date;
+alter table public.profiles add column if not exists hero_quote text;
+alter table public.profiles add column if not exists reminder_days integer not null default 7;
 
 create table if not exists public.memories (
   id uuid primary key default gen_random_uuid(),
@@ -17,11 +28,19 @@ create table if not exists public.memories (
   category text not null,
   memory_date date not null,
   photo_path text,
+  photo_paths jsonb not null default '[]'::jsonb,
   is_favorite boolean not null default false,
+  is_pinned boolean not null default false,
+  album_name text,
+  song_link text,
   created_at timestamptz not null default timezone('utc', now())
 );
 
 alter table public.memories add column if not exists is_favorite boolean not null default false;
+alter table public.memories add column if not exists photo_paths jsonb not null default '[]'::jsonb;
+alter table public.memories add column if not exists is_pinned boolean not null default false;
+alter table public.memories add column if not exists album_name text;
+alter table public.memories add column if not exists song_link text;
 
 create table if not exists public.memory_comments (
   id uuid primary key default gen_random_uuid(),
@@ -30,6 +49,39 @@ create table if not exists public.memory_comments (
   couple_code text not null,
   author_name text not null,
   body text not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.memory_reactions (
+  id uuid primary key default gen_random_uuid(),
+  memory_id uuid not null references public.memories(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  couple_code text not null,
+  author_name text not null,
+  reaction text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  unique (memory_id, owner_id, reaction)
+);
+
+create table if not exists public.milestones (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  couple_code text not null,
+  title text not null,
+  description text,
+  milestone_date date not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.private_letters (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  couple_code text not null,
+  author_name text not null,
+  recipient_name text not null,
+  title text not null,
+  body text not null,
+  is_opened boolean not null default false,
   created_at timestamptz not null default timezone('utc', now())
 );
 
@@ -68,6 +120,9 @@ for each row execute procedure public.handle_new_user();
 alter table public.profiles enable row level security;
 alter table public.memories enable row level security;
 alter table public.memory_comments enable row level security;
+alter table public.memory_reactions enable row level security;
+alter table public.milestones enable row level security;
+alter table public.private_letters enable row level security;
 
 drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own"
@@ -140,6 +195,30 @@ for delete
 to authenticated
 using (couple_code = public.current_shared_code());
 
+drop policy if exists "memory reactions shared all" on public.memory_reactions;
+create policy "memory reactions shared all"
+on public.memory_reactions
+for all
+to authenticated
+using (couple_code = public.current_shared_code())
+with check (couple_code = public.current_shared_code());
+
+drop policy if exists "milestones shared all" on public.milestones;
+create policy "milestones shared all"
+on public.milestones
+for all
+to authenticated
+using (couple_code = public.current_shared_code())
+with check (couple_code = public.current_shared_code());
+
+drop policy if exists "letters shared all" on public.private_letters;
+create policy "letters shared all"
+on public.private_letters
+for all
+to authenticated
+using (couple_code = public.current_shared_code())
+with check (couple_code = public.current_shared_code());
+
 insert into storage.buckets (id, name, public)
 values ('memory-photos', 'memory-photos', false)
 on conflict (id) do nothing;
@@ -184,6 +263,27 @@ end $$;
 do $$
 begin
   alter publication supabase_realtime add table public.memory_comments;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.memory_reactions;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.milestones;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.private_letters;
 exception
   when duplicate_object then null;
 end $$;
