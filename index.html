@@ -20,56 +20,94 @@
     <section class="privacy-gate" id="privacy-gate">
       <div class="gate-card">
         <p class="eyebrow">Private for two</p>
-        <h1>The two-person door to your story.</h1>
+        <h1>A real shared home for both of you.</h1>
         <p class="gate-copy">
-          This space is meant for the two of you. Register a shared passphrase first, then use it
-          to unlock the memory vault for this session.
+          Create your own accounts, use the same shared space code, and keep memories synced across
+          every device you sign into.
         </p>
+
+        <div class="config-banner" id="config-banner">
+          Add your Supabase URL and anon key in <code>script.js</code> before the live app can talk
+          to your shared database and photo storage.
+        </div>
 
         <div class="gate-panels">
           <form class="gate-form" id="register-form">
-            <h2>Create your phrase</h2>
+            <h2>Create account</h2>
             <label>
-              Shared passphrase
+              Your name
+              <input
+                type="text"
+                id="register-name"
+                name="register-name"
+                placeholder="Ivan"
+                autocomplete="name"
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                id="register-email"
+                name="register-email"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <label>
+              Password
               <input
                 type="password"
-                id="register-passphrase"
-                name="register-passphrase"
-                placeholder="Choose a shared phrase"
+                id="register-password"
+                name="register-password"
+                placeholder="At least 8 characters"
                 autocomplete="new-password"
                 required
               />
             </label>
             <label>
-              Confirm passphrase
+              Shared space code
               <input
-                type="password"
-                id="confirm-passphrase"
-                name="confirm-passphrase"
-                placeholder="Type it again"
-                autocomplete="new-password"
+                type="text"
+                id="shared-code"
+                name="shared-code"
+                placeholder="our-little-world"
+                autocomplete="off"
                 required
               />
             </label>
-            <button class="button secondary wide" type="submit">Register phrase</button>
+            <button class="button secondary wide" type="submit">Create my account</button>
             <p class="gate-status" id="register-status" aria-live="polite"></p>
           </form>
 
           <form class="gate-form" id="login-form">
-            <h2>Unlock your site</h2>
+            <h2>Sign in</h2>
             <label>
-              Shared passphrase
+              Email
+              <input
+                type="email"
+                id="login-email"
+                name="login-email"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <label>
+              Password
               <input
                 type="password"
-                id="login-passphrase"
-                name="login-passphrase"
-                placeholder="Enter your shared phrase"
+                id="login-password"
+                name="login-password"
+                placeholder="Enter your password"
                 autocomplete="current-password"
                 required
               />
             </label>
             <button class="button primary wide" type="submit">Unlock our story</button>
-            <p class="gate-hint">Register your phrase once in this browser, then log in anytime.</p>
+            <p class="gate-hint">Use the same shared space code during sign up so both accounts join the same memory vault.</p>
             <p class="gate-error" id="gate-error" aria-live="polite"></p>
           </form>
         </div>
@@ -87,8 +125,9 @@
             </div>
           </div>
           <div class="topbar-actions">
+            <span class="user-chip" id="user-chip">Not signed in</span>
             <a class="pill-link" href="#memory-form">Add a memory</a>
-            <button class="pill-link pill-button" id="lock-site" type="button">Lock</button>
+            <button class="pill-link pill-button" id="sign-out" type="button">Sign out</button>
           </div>
         </nav>
 
@@ -126,7 +165,7 @@
               </article>
               <article>
                 <span>04</span>
-                <p>Forever loading...</p>
+                <p>Still writing</p>
               </article>
             </div>
           </aside>
@@ -279,14 +318,18 @@
                 <input type="file" id="photo" name="photo" accept="image/*" />
               </label>
 
-              <button class="button primary wide" type="submit">Save this memory</button>
+              <button class="button primary wide" id="save-memory" type="submit">Save this memory</button>
             </form>
 
             <div class="memory-list-wrap">
               <div class="memory-list-header">
-                <p>Your saved moments</p>
-                <button class="clear-button" id="clear-memories" type="button">Clear all</button>
+                <div>
+                  <p>Your saved moments</p>
+                  <span class="memory-subtitle" id="memory-subtitle">Synced across your shared space</span>
+                </div>
+                <button class="clear-button" id="refresh-memories" type="button">Refresh</button>
               </div>
+              <p class="memory-feedback" id="memory-feedback" aria-live="polite"></p>
               <div class="memory-list" id="memory-list"></div>
             </div>
           </div>
@@ -303,9 +346,11 @@
         <img class="memory-image hidden" alt="Saved memory photo" />
         <h4 class="memory-title"></h4>
         <p class="memory-description"></p>
+        <p class="memory-meta"></p>
       </article>
     </template>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./script.js"></script>
   </body>
 </html>

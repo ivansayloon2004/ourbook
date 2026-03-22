@@ -111,6 +111,20 @@ body::after {
   color: var(--muted);
 }
 
+.config-banner {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(109, 59, 71, 0.08);
+  border: 1px solid rgba(109, 59, 71, 0.12);
+  color: var(--wine);
+  line-height: 1.5;
+}
+
+.config-banner.hidden {
+  display: none;
+}
+
 .gate-copy {
   margin: 1rem 0 1.35rem;
   line-height: 1.7;
@@ -250,6 +264,17 @@ body::after {
   justify-content: end;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(109, 59, 71, 0.15);
+  color: var(--wine);
+  font-weight: 700;
 }
 
 .hero-panel {
@@ -559,6 +584,29 @@ select:focus {
   margin-bottom: 1rem;
 }
 
+.memory-list-header p {
+  margin: 0;
+}
+
+.memory-subtitle,
+.memory-feedback,
+.memory-meta {
+  color: var(--muted);
+}
+
+.memory-subtitle {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+}
+
+.memory-feedback {
+  min-height: 1.4rem;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 .memory-list {
   display: grid;
   gap: 1rem;
@@ -598,6 +646,11 @@ select:focus {
 .memory-entry h4 {
   font-size: 1.3rem;
   margin-bottom: 0.55rem;
+}
+
+.memory-meta {
+  margin: 0.85rem 0 0;
+  font-size: 0.92rem;
 }
 
 .memory-empty {
