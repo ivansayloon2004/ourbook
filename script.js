@@ -3,7 +3,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
 
 const isConfigured =
-  SUPABASE_URL !== "https://fpbqmodxbyczocpsldx.supabase.co" && SUPABASE_ANON_KEY !== "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
+  !SUPABASE_URL.startsWith("YOUR_") &&
+  !SUPABASE_ANON_KEY.startsWith("YOUR_") &&
+  SUPABASE_URL.includes(".supabase.co") &&
+  SUPABASE_ANON_KEY.length > 20;
 const supabase = isConfigured
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -630,4 +633,6 @@ if (isConfigured) {
     applySession(session);
   });
 }
+
+
 
