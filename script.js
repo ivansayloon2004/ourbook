@@ -1,4 +1,4 @@
-﻿const SUPABASE_URL = "https://fpbqmodxbyczocpsldx.supabase.co";
+﻿const SUPABASE_URL = "https://fpboqmodxbyczocpsldx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
 
@@ -633,6 +633,7 @@ if (isConfigured) {
     applySession(session);
   });
 }
+
 
 
 
