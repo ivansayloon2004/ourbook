@@ -33,86 +33,23 @@
         </div>
 
         <div class="gate-panels">
-          <form class="gate-form" id="register-form">
-            <p class="gate-section-label">Registration</p>
-            <h2>Create an account</h2>
-            <p class="gate-section-copy">Use your personal details and the agreed shared space code.</p>
+          <form class="gate-form gate-form-single" id="phrase-form">
+            <p class="gate-section-label">Shared Access</p>
+            <h2>Enter your couple phrase</h2>
+            <p class="gate-section-copy">Use the same private phrase on both of your devices to open the archive.</p>
             <label>
-              Full name
-              <input
-                type="text"
-                id="register-name"
-                name="register-name"
-                placeholder="Ivan Sayloon"
-                autocomplete="name"
-                required
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                id="register-email"
-                name="register-email"
-                placeholder="you@example.com"
-                autocomplete="email"
-                required
-              />
-            </label>
-            <label>
-              Password
+              Shared phrase
               <input
                 type="password"
-                id="register-password"
-                name="register-password"
-                placeholder="Minimum 8 characters"
-                autocomplete="new-password"
-                required
-              />
-            </label>
-            <label>
-              Shared space code
-              <input
-                type="text"
-                id="shared-code"
-                name="shared-code"
-                placeholder="our-little-world"
-                autocomplete="off"
-                required
-              />
-            </label>
-            <button class="button secondary wide" type="submit">Create account</button>
-            <p class="gate-status" id="register-status" aria-live="polite"></p>
-          </form>
-
-          <form class="gate-form" id="login-form">
-            <p class="gate-section-label">Sign In</p>
-            <h2>Access your account</h2>
-            <p class="gate-section-copy">Use the email address and password associated with your profile.</p>
-            <label>
-              Email
-              <input
-                type="email"
-                id="login-email"
-                name="login-email"
-                placeholder="you@example.com"
-                autocomplete="email"
-                required
-              />
-            </label>
-            <label>
-              Password
-              <input
-                type="password"
-                id="login-password"
-                name="login-password"
-                placeholder="Enter your password"
+                id="shared-passphrase"
+                name="shared-passphrase"
+                placeholder="Enter your private phrase"
                 autocomplete="current-password"
                 required
               />
             </label>
-            <button class="button primary wide" type="submit">Sign in</button>
-            <p class="gate-hint">Both accounts should use the same shared space code during registration to join the same archive.</p>
+            <button class="button primary wide" type="submit">Open storybook</button>
+            <p class="gate-hint">Set the phrase directly in <code>script.js</code> and share it only with each other.</p>
             <p class="gate-error" id="gate-error" aria-live="polite"></p>
           </form>
         </div>

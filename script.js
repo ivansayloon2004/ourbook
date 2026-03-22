@@ -1,6 +1,8 @@
 const SUPABASE_URL = "https://fpboqmodxbyczocpsldx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
+const SHARED_PASSPHRASE = "iloveyou";
+const GATE_SESSION_KEY = "storybook-shared-unlocked";
 
 const isConfigured =
   !SUPABASE_URL.startsWith("YOUR_") &&
@@ -14,15 +16,8 @@ const supabaseClient = isConfigured
 const gate = document.getElementById("privacy-gate");
 const appShell = document.getElementById("app-shell");
 const configBanner = document.getElementById("config-banner");
-const registerForm = document.getElementById("register-form");
-const loginForm = document.getElementById("login-form");
-const registerNameInput = document.getElementById("register-name");
-const registerEmailInput = document.getElementById("register-email");
-const registerPasswordInput = document.getElementById("register-password");
-const sharedCodeInput = document.getElementById("shared-code");
-const loginEmailInput = document.getElementById("login-email");
-const loginPasswordInput = document.getElementById("login-password");
-const registerStatus = document.getElementById("register-status");
+const phraseForm = document.getElementById("phrase-form");
+const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
@@ -104,31 +99,9 @@ function setFeedback(message, type = "muted") {
 function setGateMessage(message = "", type = "error") {
   if (type === "error") {
     gateError.textContent = message;
-    registerStatus.textContent = "";
     return;
   }
-  registerStatus.textContent = message;
   gateError.textContent = "";
-}
-
-function humanizeAuthError(message) {
-  const value = (message || "").toLowerCase();
-  if (value.includes("invalid login credentials")) {
-    return "Incorrect email or password.";
-  }
-  if (value.includes("email not confirmed")) {
-    return "This account still is not confirmed. Delete the old user in Supabase and register again, or disable email confirmation.";
-  }
-  if (value.includes("signup is disabled") || value.includes("email signups are disabled")) {
-    return "Email signups are currently disabled in Supabase. Turn the Email provider on.";
-  }
-  if (value.includes("user already registered")) {
-    return "This email is already registered. Try signing in or delete the old Supabase user and register again.";
-  }
-  if (value.includes("failed to fetch")) {
-    return "The app could not reach Supabase. Check your project URL, publishable key, and internet connection.";
-  }
-  return message || "Something went wrong while contacting Supabase.";
 }
 
 function formatDate(dateString) {
@@ -733,67 +706,27 @@ async function deleteMilestone(milestoneId) {
   await fetchMemories();
 }
 
-async function handleRegister(event) {
+async function handlePhraseUnlock(event) {
   event.preventDefault();
-  if (!isConfigured) {
-    setGateMessage("Add your Supabase URL and anon key in script.js first.");
+  const phrase = sharedPassphraseInput.value.trim();
+  if (!phrase) {
+    setGateMessage("Enter your shared phrase first.");
     return;
   }
-
-  const displayName = registerNameInput.value.trim();
-  const email = registerEmailInput.value.trim();
-  const password = registerPasswordInput.value;
-  const sharedCode = slugifyCode(sharedCodeInput.value);
-  if (!displayName || !email || !password || !sharedCode) {
-    setGateMessage("Fill in every field first.");
+  if (phrase !== SHARED_PASSPHRASE) {
+    setGateMessage("That phrase is not correct.");
     return;
   }
-
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: window.location.origin,
-      data: {
-        display_name: displayName,
-        shared_code: sharedCode,
-      },
-    },
-  });
-
-  if (error) {
-    setGateMessage(humanizeAuthError(error.message));
-    return;
-  }
-  registerForm.reset();
-  if (!data.session) {
-    setGateMessage("Account created. Check your email to confirm, then sign in.", "success");
-    return;
-  }
-  setGateMessage("Account created and signed in.", "success");
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  if (!isConfigured) {
-    setGateMessage("Add your Supabase URL and anon key in script.js first.");
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: loginEmailInput.value.trim(),
-    password: loginPasswordInput.value,
-  });
-
-  if (error) {
-    setGateMessage(humanizeAuthError(error.message));
-    return;
-  }
-  loginForm.reset();
+  window.sessionStorage.setItem(GATE_SESSION_KEY, "true");
+  setGateMessage("");
+  phraseForm.reset();
+  await applyGateUnlock();
 }
 
 async function handleSignOut() {
-  await supabaseClient.auth.signOut();
+  window.sessionStorage.removeItem(GATE_SESSION_KEY);
+  setUnlockedState(false);
+  sharedPassphraseInput.focus();
 }
 
 async function handleProfileSave(event) {
@@ -960,6 +893,28 @@ async function applySession(session) {
   }
 }
 
+async function applyGateUnlock() {
+  const unlocked = window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
+  if (!unlocked) {
+    setUnlockedState(false);
+    return;
+  }
+
+  if (!isConfigured) {
+    setGateMessage("Supabase is still required for synced memories. Add your URL and key in script.js.");
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) {
+    setGateMessage("Your shared phrase is correct, but you still need a signed-in Supabase session to load cloud memories.");
+    setUnlockedState(false);
+    return;
+  }
+
+  await applySession(data.session);
+}
+
 if (!isConfigured) {
   configBanner.classList.remove("hidden");
   renderEmptyState("Add your Supabase configuration to start syncing real memories.");
@@ -967,9 +922,8 @@ if (!isConfigured) {
   configBanner.classList.add("hidden");
 }
 
-renderEmptyState("Sign in to open your shared memory vault.");
-registerForm.addEventListener("submit", handleRegister);
-loginForm.addEventListener("submit", handleLogin);
+renderEmptyState("Enter your shared phrase to open your storybook.");
+phraseForm.addEventListener("submit", handlePhraseUnlock);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);
 milestoneForm.addEventListener("submit", handleMilestoneSave);
@@ -991,6 +945,10 @@ calendarNext.addEventListener("click", () => {
 });
 
 if (isConfigured) {
-  supabaseClient.auth.getSession().then(({ data }) => applySession(data.session));
-  supabaseClient.auth.onAuthStateChange((_event, session) => applySession(session));
+  applyGateUnlock();
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if (window.sessionStorage.getItem(GATE_SESSION_KEY) === "true") {
+      applySession(session);
+    }
+  });
 }
