@@ -7,7 +7,7 @@ const isConfigured =
   !SUPABASE_ANON_KEY.startsWith("YOUR_") &&
   SUPABASE_URL.includes(".supabase.co") &&
   SUPABASE_ANON_KEY.length > 20;
-const supabase = isConfigured
+const supabaseClient = isConfigured
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
@@ -167,7 +167,7 @@ async function createPhotoUrls(memories) {
 
   const signedUrlEntries = await Promise.all(
     withPhotos.map(async (memory) => {
-      const { data, error } = await supabase.storage
+      const { data, error } = await supabaseClient.storage
         .from(PHOTO_BUCKET)
         .createSignedUrl(memory.photo_path, 60 * 60);
 
@@ -274,7 +274,7 @@ function animateStats() {
 }
 
 async function loadProfile(userId) {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await supabaseClient.from("profiles").select("*").eq("id", userId).single();
 
   if (error) {
     throw error;
@@ -292,7 +292,7 @@ async function fetchComments(memoryIds) {
     return;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("memory_comments")
     .select("id, memory_id, author_name, body, created_at")
     .in("memory_id", memoryIds)
@@ -317,7 +317,7 @@ async function fetchMemories() {
 
   setFeedback("Loading memories...");
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("memories")
     .select("id, title, description, category, memory_date, photo_path, author_name, created_at, is_favorite")
     .eq("couple_code", currentProfile.shared_code)
@@ -344,10 +344,10 @@ async function subscribeToMemories() {
   }
 
   if (memoriesChannel) {
-    await supabase.removeChannel(memoriesChannel);
+    await supabaseClient.removeChannel(memoriesChannel);
   }
 
-  memoriesChannel = supabase
+  memoriesChannel = supabaseClient
     .channel(`couple-space:${currentProfile.shared_code}`)
     .on(
       "postgres_changes",
@@ -381,7 +381,7 @@ async function uploadPhoto(file) {
   }
 
   const filePath = `${currentProfile.shared_code}/${currentSession.user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(filePath, file, {
+  const { error } = await supabaseClient.storage.from(PHOTO_BUCKET).upload(filePath, file, {
     cacheControl: "3600",
     upsert: false,
   });
@@ -394,7 +394,7 @@ async function uploadPhoto(file) {
 }
 
 async function toggleFavorite(memoryId, nextValue) {
-  const { error } = await supabase.from("memories").update({ is_favorite: nextValue }).eq("id", memoryId);
+  const { error } = await supabaseClient.from("memories").update({ is_favorite: nextValue }).eq("id", memoryId);
 
   if (error) {
     setFeedback(error.message, "error");
@@ -414,7 +414,7 @@ async function handleCommentSubmit(event, memoryId) {
     return;
   }
 
-  const { error } = await supabase.from("memory_comments").insert({
+  const { error } = await supabaseClient.from("memory_comments").insert({
     memory_id: memoryId,
     couple_code: currentProfile.shared_code,
     owner_id: currentSession.user.id,
@@ -457,7 +457,7 @@ async function handleRegister(event) {
     return;
   }
 
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await supabaseClient.auth.signUp({
     email,
     password,
     options: {
@@ -493,7 +493,7 @@ async function handleLogin(event) {
 
   setGateMessage("", "success");
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabaseClient.auth.signInWithPassword({
     email: loginEmailInput.value.trim(),
     password: loginPasswordInput.value,
   });
@@ -507,11 +507,11 @@ async function handleLogin(event) {
 }
 
 async function handleSignOut() {
-  if (!supabase) {
+  if (!supabaseClient) {
     return;
   }
 
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
 }
 
 async function handleSaveMemory(event) {
@@ -543,7 +543,7 @@ async function handleSaveMemory(event) {
       photoPath = await uploadPhoto(photoFile);
     }
 
-    const { error } = await supabase.from("memories").insert({
+    const { error } = await supabaseClient.from("memories").insert({
       owner_id: currentSession.user.id,
       couple_code: currentProfile.shared_code,
       author_name: currentProfile.display_name,
@@ -591,8 +591,8 @@ async function applySession(session) {
     renderEmptyState("Sign in to open your shared memory vault.");
     setFeedback("");
 
-    if (supabase && memoriesChannel) {
-      await supabase.removeChannel(memoriesChannel);
+    if (supabaseClient && memoriesChannel) {
+      await supabaseClient.removeChannel(memoriesChannel);
       memoriesChannel = null;
     }
 
@@ -625,11 +625,11 @@ refreshButton.addEventListener("click", fetchMemories);
 form.addEventListener("submit", handleSaveMemory);
 
 if (isConfigured) {
-  supabase.auth.getSession().then(({ data }) => {
+  supabaseClient.auth.getSession().then(({ data }) => {
     applySession(data.session);
   });
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
     applySession(session);
   });
 }
