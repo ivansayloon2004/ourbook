@@ -1,6 +1,6 @@
 const storageKey = "storybook-memories";
 const sessionKey = "storybook-unlocked";
-const passphraseHash = "b9dfe142c20b69fc2867d923e82955b8eda47556d46268ab252aff52f7b5a4f0";
+const authKey = "storybook-passphrase-hash";
 
 const starterMemories = [
   {
@@ -19,9 +19,13 @@ const starterMemories = [
 
 const gate = document.getElementById("privacy-gate");
 const appShell = document.getElementById("app-shell");
-const gateForm = document.getElementById("gate-form");
+const registerForm = document.getElementById("register-form");
+const loginForm = document.getElementById("login-form");
+const registerPassphraseInput = document.getElementById("register-passphrase");
+const confirmPassphraseInput = document.getElementById("confirm-passphrase");
+const loginPassphraseInput = document.getElementById("login-passphrase");
+const registerStatus = document.getElementById("register-status");
 const gateError = document.getElementById("gate-error");
-const passphraseInput = document.getElementById("passphrase");
 const lockButton = document.getElementById("lock-site");
 const form = document.getElementById("memory-form");
 const memoryList = document.getElementById("memory-list");
@@ -48,6 +52,14 @@ function setUnlockedState(unlocked) {
     animateStats();
     statsAnimated = true;
   }
+}
+
+function getStoredPassphraseHash() {
+  return window.localStorage.getItem(authKey);
+}
+
+function setStoredPassphraseHash(hash) {
+  window.localStorage.setItem(authKey, hash);
 }
 
 function getMemories() {
@@ -129,31 +141,70 @@ function animateStats() {
   });
 }
 
+async function handleRegister(event) {
+  event.preventDefault();
+  registerStatus.textContent = "";
+  gateError.textContent = "";
+
+  const passphrase = registerPassphraseInput.value.trim();
+  const confirmation = confirmPassphraseInput.value.trim();
+
+  if (!passphrase || !confirmation) {
+    registerStatus.textContent = "Enter the passphrase in both fields.";
+    return;
+  }
+
+  if (passphrase.length < 6) {
+    registerStatus.textContent = "Choose a passphrase with at least 6 characters.";
+    return;
+  }
+
+  if (passphrase !== confirmation) {
+    registerStatus.textContent = "Those passphrases do not match yet.";
+    return;
+  }
+
+  const hash = await sha256(passphrase);
+  setStoredPassphraseHash(hash);
+  window.sessionStorage.setItem(sessionKey, "true");
+  registerForm.reset();
+  loginForm.reset();
+  registerStatus.textContent = "Shared passphrase saved for this browser.";
+  setUnlockedState(true);
+}
+
 async function handleUnlock(event) {
   event.preventDefault();
   gateError.textContent = "";
+  registerStatus.textContent = "";
 
-  const guess = passphraseInput.value.trim();
+  const storedHash = getStoredPassphraseHash();
+  if (!storedHash) {
+    gateError.textContent = "Register a shared passphrase first.";
+    return;
+  }
+
+  const guess = loginPassphraseInput.value.trim();
   if (!guess) {
     gateError.textContent = "Enter your shared passphrase first.";
     return;
   }
 
   const hash = await sha256(guess);
-  if (hash !== passphraseHash) {
+  if (hash !== storedHash) {
     gateError.textContent = "That passphrase is not right.";
     return;
   }
 
   window.sessionStorage.setItem(sessionKey, "true");
-  gateForm.reset();
+  loginForm.reset();
   setUnlockedState(true);
 }
 
 function lockSite() {
   window.sessionStorage.removeItem(sessionKey);
   setUnlockedState(false);
-  passphraseInput.focus();
+  loginPassphraseInput.focus();
 }
 
 form.addEventListener("submit", (event) => {
@@ -184,12 +235,17 @@ clearButton.addEventListener("click", () => {
 });
 
 renderMemories();
-gateForm.addEventListener("submit", handleUnlock);
+registerForm.addEventListener("submit", handleRegister);
+loginForm.addEventListener("submit", handleUnlock);
 lockButton.addEventListener("click", lockSite);
 
 const isUnlocked = window.sessionStorage.getItem(sessionKey) === "true";
 setUnlockedState(isUnlocked);
 
 if (!isUnlocked) {
-  passphraseInput.focus();
+  if (getStoredPassphraseHash()) {
+    loginPassphraseInput.focus();
+  } else {
+    registerPassphraseInput.focus();
+  }
 }

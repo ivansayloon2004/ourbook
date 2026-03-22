@@ -22,26 +22,57 @@
         <p class="eyebrow">Private for two</p>
         <h1>The two-person door to your story.</h1>
         <p class="gate-copy">
-          This space is meant for the two of you. Use your shared passphrase to unlock the memory
-          vault for this session.
+          This space is meant for the two of you. Register a shared passphrase first, then use it
+          to unlock the memory vault for this session.
         </p>
 
-        <form class="gate-form" id="gate-form">
-          <label>
-            Shared passphrase
-            <input
-              type="password"
-              id="passphrase"
-              name="passphrase"
-              placeholder="Enter your private phrase"
-              autocomplete="current-password"
-              required
-            />
-          </label>
-          <button class="button primary wide" type="submit">Unlock our story</button>
-          <p class="gate-hint">Change the passphrase in <code>script.js</code> before you deploy.</p>
-          <p class="gate-error" id="gate-error" aria-live="polite"></p>
-        </form>
+        <div class="gate-panels">
+          <form class="gate-form" id="register-form">
+            <h2>Create your phrase</h2>
+            <label>
+              Shared passphrase
+              <input
+                type="password"
+                id="register-passphrase"
+                name="register-passphrase"
+                placeholder="Choose a shared phrase"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <label>
+              Confirm passphrase
+              <input
+                type="password"
+                id="confirm-passphrase"
+                name="confirm-passphrase"
+                placeholder="Type it again"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <button class="button secondary wide" type="submit">Register phrase</button>
+            <p class="gate-status" id="register-status" aria-live="polite"></p>
+          </form>
+
+          <form class="gate-form" id="login-form">
+            <h2>Unlock your site</h2>
+            <label>
+              Shared passphrase
+              <input
+                type="password"
+                id="login-passphrase"
+                name="login-passphrase"
+                placeholder="Enter your shared phrase"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button class="button primary wide" type="submit">Unlock our story</button>
+            <p class="gate-hint">Register your phrase once in this browser, then log in anytime.</p>
+            <p class="gate-error" id="gate-error" aria-live="polite"></p>
+          </form>
+        </div>
       </div>
     </section>
 

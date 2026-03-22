@@ -116,10 +116,30 @@ body::after {
   line-height: 1.7;
 }
 
+.gate-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.gate-form {
+  padding: 1.1rem;
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.gate-form h2 {
+  margin: 0 0 0.9rem;
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+}
+
 .gate-form label {
   display: block;
   font-size: 0.95rem;
   font-weight: 700;
+  margin-bottom: 0.9rem;
 }
 
 .gate-hint {
@@ -127,12 +147,20 @@ body::after {
   font-size: 0.92rem;
 }
 
-.gate-error {
+.gate-error,
+.gate-status {
   min-height: 1.4rem;
   margin: 0.75rem 0 0;
   font-size: 0.95rem;
-  color: #9c3147;
   font-weight: 700;
+}
+
+.gate-error {
+  color: #9c3147;
+}
+
+.gate-status {
+  color: #2f6c50;
 }
 
 .hero {
@@ -590,7 +618,8 @@ select:focus {
   .timeline,
   .gallery-grid,
   .notes-grid,
-  .vault-layout {
+  .vault-layout,
+  .gate-panels {
     grid-template-columns: 1fr;
   }
 
