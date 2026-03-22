@@ -1,9 +1,9 @@
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://fpbqmodxbyczocpsldx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
 
 const isConfigured =
-  SUPABASE_URL !== "YOUR_SUPABASE_URL" && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
+  SUPABASE_URL !== "https://fpbqmodxbyczocpsldx.supabase.co" && SUPABASE_ANON_KEY !== "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const supabase = isConfigured
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
