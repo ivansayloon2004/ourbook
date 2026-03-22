@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Our Storybook</title>
+    <meta
+      name="description"
+      content="A private little corner for two people to collect their favorite memories."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <span class="brand-mark">S</span>
+            <div>
+              <p class="eyebrow">For the two of you</p>
+              <h1>Our Storybook</h1>
+            </div>
+          </div>
+          <a class="pill-link" href="#memory-form">Add a memory</a>
+        </nav>
+
+        <section class="hero-panel">
+          <div class="hero-copy">
+            <p class="eyebrow">A shared home for your favorite moments</p>
+            <h2>Keep your love notes, milestones, tiny rituals, and beautiful chaos in one place.</h2>
+            <p class="hero-text">
+              Built like a scrapbook and a journal at the same time, this little website lets you
+              celebrate what already happened and keep adding to your story as it grows.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#memory-vault">Open memory vault</a>
+              <a class="button secondary" href="#timeline">See your timeline</a>
+            </div>
+          </div>
+
+          <aside class="highlight-card">
+            <p class="eyebrow">Today’s reminder</p>
+            <blockquote>
+              “The best thing about us is how ordinary days become unforgettable.”
+            </blockquote>
+            <div class="highlight-grid">
+              <article>
+                <span>01</span>
+                <p>First glance</p>
+              </article>
+              <article>
+                <span>02</span>
+                <p>First date</p>
+              </article>
+              <article>
+                <span>03</span>
+                <p>First trip</p>
+              </article>
+              <article>
+                <span>04</span>
+                <p>Forever loading...</p>
+              </article>
+            </div>
+          </aside>
+        </section>
+      </header>
+
+      <main>
+        <section class="stats-strip">
+          <article>
+            <span class="stat-number" data-count="128">0</span>
+            <p>Photos worth framing</p>
+          </article>
+          <article>
+            <span class="stat-number" data-count="42">0</span>
+            <p>Little dates and adventures</p>
+          </article>
+          <article>
+            <span class="stat-number" data-count="365">0</span>
+            <p>Reasons to choose each other again</p>
+          </article>
+        </section>
+
+        <section class="story-grid" id="timeline">
+          <div class="section-heading">
+            <p class="eyebrow">Your chapter map</p>
+            <h3>The timeline of your favorite days</h3>
+          </div>
+
+          <div class="timeline">
+            <article class="timeline-card">
+              <span class="timeline-date">The beginning</span>
+              <h4>When everything quietly changed</h4>
+              <p>
+                Add the day you met, the song that was playing, or the tiny detail one of you still
+                remembers for no reason at all.
+              </p>
+            </article>
+            <article class="timeline-card">
+              <span class="timeline-date">The first yes</span>
+              <h4>Your first real date</h4>
+              <p>
+                Capture where you went, what you ate, and the awkward, sweet, unforgettable moments
+                in between.
+              </p>
+            </article>
+            <article class="timeline-card">
+              <span class="timeline-date">The first adventure</span>
+              <h4>A place that became “ours”</h4>
+              <p>
+                Whether it was a city, a cafe, or a rainy walk, this is where shared memories start
+                feeling like tradition.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="gallery-section">
+          <div class="section-heading">
+            <p class="eyebrow">Moodboard</p>
+            <h3>A gallery for snapshots and soft moments</h3>
+          </div>
+
+          <div class="gallery-grid">
+            <article class="gallery-card sunrise">
+              <div>
+                <p class="gallery-label">Golden hour</p>
+                <h4>That walk you never wanted to end</h4>
+              </div>
+            </article>
+            <article class="gallery-card night">
+              <div>
+                <p class="gallery-label">Late-night favorite</p>
+                <h4>Calls that turned into sunrise</h4>
+              </div>
+            </article>
+            <article class="gallery-card polaroid">
+              <div>
+                <p class="gallery-label">Tiny keepsakes</p>
+                <h4>Tickets, receipts, flowers, and proof</h4>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="notes-section">
+          <div class="section-heading">
+            <p class="eyebrow">Love language archive</p>
+            <h3>Notes worth keeping forever</h3>
+          </div>
+
+          <div class="notes-grid">
+            <article class="note-card">
+              <p class="note-tag">Favorite thing</p>
+              <p>
+                “Even your shortest good morning text somehow makes the whole day feel softer.”
+              </p>
+            </article>
+            <article class="note-card">
+              <p class="note-tag">Inside joke</p>
+              <p>“We said it once as a joke, and now it’s basically a language only we speak.”</p>
+            </article>
+            <article class="note-card">
+              <p class="note-tag">Promise</p>
+              <p>“No matter how busy life gets, we keep making time for us on purpose.”</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="memory-vault" id="memory-vault">
+          <div class="section-heading">
+            <p class="eyebrow">Memory vault</p>
+            <h3>Add your own moments and keep them here</h3>
+          </div>
+
+          <div class="vault-layout">
+            <form class="memory-form" id="memory-form">
+              <label>
+                Memory title
+                <input type="text" id="title" name="title" placeholder="Movie night in the rain" required />
+              </label>
+
+              <label>
+                Date
+                <input type="date" id="date" name="date" required />
+              </label>
+
+              <label>
+                Category
+                <select id="category" name="category">
+                  <option value="Date Night">Date Night</option>
+                  <option value="Trip">Trip</option>
+                  <option value="Everyday Magic">Everyday Magic</option>
+                  <option value="Milestone">Milestone</option>
+                </select>
+              </label>
+
+              <label>
+                What happened?
+                <textarea
+                  id="description"
+                  name="description"
+                  rows="5"
+                  placeholder="Write the little details you never want to forget..."
+                  required
+                ></textarea>
+              </label>
+
+              <button class="button primary wide" type="submit">Save this memory</button>
+            </form>
+
+            <div class="memory-list-wrap">
+              <div class="memory-list-header">
+                <p>Your saved moments</p>
+                <button class="clear-button" id="clear-memories" type="button">Clear all</button>
+              </div>
+              <div class="memory-list" id="memory-list"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="memory-template">
+      <article class="memory-entry">
+        <div class="memory-entry-top">
+          <p class="memory-category"></p>
+          <time class="memory-date"></time>
+        </div>
+        <h4 class="memory-title"></h4>
+        <p class="memory-description"></p>
+      </article>
+    </template>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
