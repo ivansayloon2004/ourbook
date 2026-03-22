@@ -1,9 +1,10 @@
 const SUPABASE_URL = "https://fpboqmodxbyczocpsldx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_cNQtliKdzNAqIXvSllaM-Q_tWRKjOFx";
 const PHOTO_BUCKET = "memory-photos";
-const COUPLE_NAMES = "Ivan and Love";
-const SHARED_PASSPHRASE_HASH = "e4ad93ca07acb8d908a3aa41e920ea4f4ef4f26e7f86cf8291c5db289780a5ae";
+const DEFAULT_GATE_NAMES = "Reserved for one couple only";
 const GATE_SESSION_KEY = "storybook-shared-unlocked";
+const GATE_SHARED_CODE_KEY = "storybook-shared-code";
+const GATE_COUPLE_TITLE_KEY = "storybook-couple-title";
 
 const isConfigured =
   !SUPABASE_URL.startsWith("YOUR_") &&
@@ -18,8 +19,22 @@ const gate = document.getElementById("privacy-gate");
 const appShell = document.getElementById("app-shell");
 const configBanner = document.getElementById("config-banner");
 const phraseForm = document.getElementById("phrase-form");
+const registerForm = document.getElementById("register-form");
+const authForm = document.getElementById("auth-form");
 const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
+const registerCoupleTitleInput = document.getElementById("register-couple-title");
+const registerSharedCodeInput = document.getElementById("register-shared-code");
+const registerPassphraseInput = document.getElementById("register-passphrase");
+const registerPassphraseConfirmInput = document.getElementById("register-passphrase-confirm");
+const registerError = document.getElementById("register-error");
+const registerStatus = document.getElementById("register-status");
+const authDisplayNameInput = document.getElementById("auth-display-name");
+const authSharedCodeInput = document.getElementById("auth-shared-code");
+const authEmailInput = document.getElementById("auth-email");
+const authPasswordInput = document.getElementById("auth-password");
+const authError = document.getElementById("auth-error");
+const authStatus = document.getElementById("auth-status");
 const gateNames = document.getElementById("gate-names");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
@@ -99,11 +114,58 @@ function setFeedback(message, type = "muted") {
 }
 
 function setGateMessage(message = "", type = "error") {
-  if (type === "error") {
-    gateError.textContent = message;
+  gateError.textContent = message;
+  gateError.style.color = type === "success" ? "#2f6c50" : "#9c3147";
+}
+
+function setAuthMessage(message = "", type = "error") {
+  if (type === "success") {
+    authStatus.textContent = message;
+    authError.textContent = "";
     return;
   }
-  gateError.textContent = "";
+
+  authError.textContent = message;
+  authStatus.textContent = "";
+}
+
+function setRegisterMessage(message = "", type = "error") {
+  if (type === "success") {
+    registerStatus.textContent = message;
+    registerError.textContent = "";
+    return;
+  }
+
+  registerError.textContent = message;
+  registerStatus.textContent = "";
+}
+
+function isGateUnlocked() {
+  return window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
+}
+
+function savedSharedCode() {
+  return window.sessionStorage.getItem(GATE_SHARED_CODE_KEY) || "";
+}
+
+function savedCoupleTitle() {
+  return window.sessionStorage.getItem(GATE_COUPLE_TITLE_KEY) || "";
+}
+
+function saveUnlockedCouple(sharedCode, coupleTitle) {
+  window.sessionStorage.setItem(GATE_SESSION_KEY, "true");
+  window.sessionStorage.setItem(GATE_SHARED_CODE_KEY, sharedCode);
+  window.sessionStorage.setItem(GATE_COUPLE_TITLE_KEY, coupleTitle);
+}
+
+function clearUnlockedCouple() {
+  window.sessionStorage.removeItem(GATE_SESSION_KEY);
+  window.sessionStorage.removeItem(GATE_SHARED_CODE_KEY);
+  window.sessionStorage.removeItem(GATE_COUPLE_TITLE_KEY);
+}
+
+function updateGateNames(name = "") {
+  gateNames.textContent = name || DEFAULT_GATE_NAMES;
 }
 
 function formatDate(dateString) {
@@ -122,6 +184,14 @@ function formatMonthDay(dateString) {
 
 function slugifyCode(value) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function validateStrongPhrase(phrase) {
+  if (phrase.length < 14) return "Make the phrase at least 14 characters long.";
+  if (!/[a-z]/.test(phrase) || !/[A-Z]/.test(phrase)) return "Use both lowercase and uppercase letters.";
+  if (!/\d/.test(phrase)) return "Add at least one number.";
+  if (!/[^A-Za-z0-9]/.test(phrase)) return "Add at least one symbol like !, #, or ?.";
+  return "";
 }
 
 function sanitizeFileName(value) {
@@ -181,6 +251,22 @@ async function sha256(value) {
   return Array.from(new Uint8Array(hashBuffer))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+async function findCoupleSpaceByPhrase(phraseHash) {
+  const { data, error } = await supabaseClient.rpc("find_couple_space_by_phrase", {
+    input_phrase_hash: phraseHash,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function findCoupleSpaceByCode(sharedCode) {
+  const { data, error } = await supabaseClient.rpc("find_couple_space_by_code", {
+    input_shared_code: sharedCode,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 async function createSignedUrls(paths) {
@@ -497,6 +583,9 @@ async function loadProfile(userId) {
   currentProfile = data;
   userChip.textContent = `${data.display_name} | ${data.shared_code}`;
   memorySubtitle.textContent = `Synced across space: ${data.shared_code}`;
+  authSharedCodeInput.value = data.shared_code;
+  saveUnlockedCouple(data.shared_code, data.couple_title || data.partner_names || "");
+  updateGateNames(data.couple_title || data.partner_names || "");
   populateProfileForm();
 }
 
@@ -718,26 +807,199 @@ async function deleteMilestone(milestoneId) {
 
 async function handlePhraseUnlock(event) {
   event.preventDefault();
+  if (!supabaseClient) {
+    setGateMessage("Supabase is still required to verify your reserved phrase.");
+    return;
+  }
   const phrase = sharedPassphraseInput.value.trim();
   if (!phrase) {
     setGateMessage("Enter your shared phrase first.");
     return;
   }
   const hash = await sha256(phrase);
-  if (hash !== SHARED_PASSPHRASE_HASH) {
-    setGateMessage("That phrase is not correct.");
+  let reservedSpace;
+  try {
+    reservedSpace = await findCoupleSpaceByPhrase(hash);
+  } catch (error) {
+    setGateMessage(error.message || "We could not verify that phrase right now.");
     return;
   }
-  window.sessionStorage.setItem(GATE_SESSION_KEY, "true");
+
+  if (!reservedSpace?.shared_code) {
+    setGateMessage("That phrase is not registered yet.");
+    return;
+  }
+
+  saveUnlockedCouple(reservedSpace.shared_code, reservedSpace.couple_title || "");
+  authSharedCodeInput.value = reservedSpace.shared_code;
+  updateGateNames(reservedSpace.couple_title || "");
   setGateMessage("");
   phraseForm.reset();
   await applyGateUnlock();
 }
 
+async function handleRegisterPhrase(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setRegisterMessage("Supabase is required to reserve a unique couple phrase.");
+    return;
+  }
+
+  const coupleTitle = registerCoupleTitleInput.value.trim();
+  const sharedCode = slugifyCode(registerSharedCodeInput.value);
+  const phrase = registerPassphraseInput.value.trim();
+  const confirmPhrase = registerPassphraseConfirmInput.value.trim();
+
+  if (!coupleTitle || !sharedCode || !phrase || !confirmPhrase) {
+    setRegisterMessage("Fill in every field before reserving your phrase.");
+    return;
+  }
+
+  if (sharedCode.length < 4) {
+    setRegisterMessage("Choose a shared space code with at least 4 characters.");
+    return;
+  }
+
+  const phraseStrengthError = validateStrongPhrase(phrase);
+  if (phraseStrengthError) {
+    setRegisterMessage(phraseStrengthError);
+    return;
+  }
+
+  if (phrase !== confirmPhrase) {
+    setRegisterMessage("The two phrase fields do not match.");
+    return;
+  }
+
+  const phraseHash = await sha256(phrase);
+  setRegisterMessage("", "success");
+  registerStatus.textContent = "Reserving your couple phrase...";
+
+  const { data, error } = await supabaseClient.rpc("reserve_couple_space", {
+    input_shared_code: sharedCode,
+    input_phrase_hash: phraseHash,
+    input_couple_title: coupleTitle,
+  });
+
+  if (error) {
+    setRegisterMessage(error.message || "We could not reserve that phrase.");
+    return;
+  }
+
+  const reservedSpace = Array.isArray(data) ? data[0] : data;
+  saveUnlockedCouple(reservedSpace?.shared_code || sharedCode, reservedSpace?.couple_title || coupleTitle);
+  authSharedCodeInput.value = reservedSpace?.shared_code || sharedCode;
+  registerForm.reset();
+  updateGateNames(reservedSpace?.couple_title || coupleTitle);
+  setRegisterMessage("Your couple phrase is reserved. Create your accounts below using the same shared code.", "success");
+  setGateMessage("Your phrase is now reserved. Use it on both devices to open this space.", "success");
+}
+
 async function handleSignOut() {
-  window.sessionStorage.removeItem(GATE_SESSION_KEY);
+  clearUnlockedCouple();
+  if (supabaseClient) {
+    await supabaseClient.auth.signOut();
+  }
   setUnlockedState(false);
+  setAuthMessage("");
+  updateGateNames("");
   sharedPassphraseInput.focus();
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthMessage("Add your Supabase URL and anon key in script.js first.");
+    return;
+  }
+
+  const action = event.submitter?.dataset.authAction || "signin";
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value;
+  const displayName = authDisplayNameInput.value.trim();
+  const sharedCode = slugifyCode(authSharedCodeInput.value);
+
+  if (!email || !password) {
+    setAuthMessage("Enter your email and password first.");
+    return;
+  }
+
+  if (action === "signup" && (!displayName || !sharedCode)) {
+    setAuthMessage("Add a display name and shared space code before creating an account.");
+    return;
+  }
+
+  if (action === "signup") {
+    let reservedSpace;
+    try {
+      reservedSpace = await findCoupleSpaceByCode(sharedCode);
+    } catch (error) {
+      setAuthMessage(error.message || "We could not verify that shared space code.");
+      return;
+    }
+    if (!reservedSpace?.shared_code) {
+      setAuthMessage("Reserve this shared space code first in the couple phrase panel above.");
+      return;
+    }
+  }
+
+  setAuthMessage("");
+  authStatus.textContent = action === "signup" ? "Creating your account..." : "Signing you in...";
+
+  if (action === "signup") {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+          shared_code: sharedCode,
+        },
+      },
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    if (!data.session) {
+      setAuthMessage("Account created. Check your email inbox and confirm the link before signing in.", "success");
+      authPasswordInput.value = "";
+      return;
+    }
+
+    setAuthMessage(
+      isGateUnlocked()
+        ? "Account created and signed in. Opening your storybook now."
+        : "Account created and signed in. Enter your shared phrase to open the storybook.",
+      "success"
+    );
+    if (isGateUnlocked()) {
+      await applySession(data.session);
+    }
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    setAuthMessage(error.message);
+    return;
+  }
+
+  setAuthMessage(
+    isGateUnlocked()
+      ? "Signed in successfully. Opening your storybook now."
+      : "Signed in successfully. Enter your shared phrase to open the storybook.",
+    "success"
+  );
+  if (isGateUnlocked()) {
+    await applySession(data.session);
+  }
 }
 
 async function handleProfileSave(event) {
@@ -905,7 +1167,7 @@ async function applySession(session) {
 }
 
 async function applyGateUnlock() {
-  const unlocked = window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
+  const unlocked = isGateUnlocked();
   if (!unlocked) {
     setUnlockedState(false);
     return;
@@ -918,7 +1180,14 @@ async function applyGateUnlock() {
 
   const { data } = await supabaseClient.auth.getSession();
   if (!data.session) {
-    setGateMessage("Your shared phrase is correct, but you still need a signed-in Supabase session to load cloud memories.");
+    const matchedCode = savedSharedCode();
+    if (matchedCode) authSharedCodeInput.value = matchedCode;
+    setGateMessage(
+      matchedCode
+        ? `Phrase accepted for ${matchedCode}. Create or sign in to your personal account below to sync the archive.`
+        : "Your shared phrase is correct. Sign in or create an account in the panel beside it to load your cloud memories.",
+      "success"
+    );
     setUnlockedState(false);
     return;
   }
@@ -934,8 +1203,11 @@ if (!isConfigured) {
 }
 
 renderEmptyState("Enter your shared phrase to open your storybook.");
-gateNames.textContent = COUPLE_NAMES;
+updateGateNames(savedCoupleTitle());
+authSharedCodeInput.value = savedSharedCode();
 phraseForm.addEventListener("submit", handlePhraseUnlock);
+registerForm.addEventListener("submit", handleRegisterPhrase);
+authForm.addEventListener("submit", handleAuthSubmit);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);
 milestoneForm.addEventListener("submit", handleMilestoneSave);

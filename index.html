@@ -24,7 +24,8 @@
         <h1>Secure access to your shared archive.</h1>
         <p class="gate-names" id="gate-names">For the two of you</p>
         <p class="gate-copy">
-          Enter the private phrase that only the two of you know to open your shared archive.
+          Reserve one unique couple phrase for your own private space, then use that same phrase on
+          both devices to open your shared archive.
         </p>
 
         <div class="config-banner" id="config-banner">
@@ -35,8 +36,8 @@
         <div class="gate-panels">
           <form class="gate-form gate-form-single" id="phrase-form">
             <p class="gate-section-label">Shared Access</p>
-            <h2>Enter your couple phrase</h2>
-            <p class="gate-section-copy">Use the same private phrase on both of your devices to open the archive.</p>
+            <h2>Open your couple space</h2>
+            <p class="gate-section-copy">Use the phrase you already reserved together to unlock your space.</p>
             <label>
               Shared phrase
               <input
@@ -49,8 +50,117 @@
               />
             </label>
             <button class="button primary wide" type="submit">Open storybook</button>
-            <p class="gate-hint">Set the phrase directly in <code>script.js</code> and share it only with each other.</p>
+            <p class="gate-hint">Your phrase is checked securely, so no one else can reserve the same private space.</p>
             <p class="gate-error" id="gate-error" aria-live="polite"></p>
+          </form>
+
+          <form class="gate-form" id="register-form">
+            <p class="gate-section-label">Reserve Space</p>
+            <h2>Register your couple phrase</h2>
+            <p class="gate-section-copy">Create one unique shared code and one strong phrase before either of you signs in.</p>
+            <label>
+              Couple title
+              <input
+                type="text"
+                id="register-couple-title"
+                name="register-couple-title"
+                placeholder="Ivan and Love"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label>
+              Shared space code
+              <input
+                type="text"
+                id="register-shared-code"
+                name="register-shared-code"
+                placeholder="ivan-and-love"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label>
+              Private phrase
+              <input
+                type="password"
+                id="register-passphrase"
+                name="register-passphrase"
+                placeholder="Use a long private phrase"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <label>
+              Confirm phrase
+              <input
+                type="password"
+                id="register-passphrase-confirm"
+                name="register-passphrase-confirm"
+                placeholder="Confirm the exact phrase"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <button class="button secondary wide" type="submit">Reserve our phrase</button>
+            <p class="gate-hint">Make it hard: at least 14 characters with a mix of letters, numbers, and symbols.</p>
+            <p class="gate-error" id="register-error" aria-live="polite"></p>
+            <p class="gate-status" id="register-status" aria-live="polite"></p>
+          </form>
+
+          <form class="gate-form gate-form-wide" id="auth-form">
+            <p class="gate-section-label">Cloud Sync</p>
+            <h2>Create your personal login</h2>
+            <p class="gate-section-copy">After reserving your couple phrase, each of you should use your own email and password with the same shared space code.</p>
+            <label>
+              Display name
+              <input
+                type="text"
+                id="auth-display-name"
+                name="auth-display-name"
+                placeholder="Ivan"
+                autocomplete="nickname"
+              />
+            </label>
+            <label>
+              Shared space code
+              <input
+                type="text"
+                id="auth-shared-code"
+                name="auth-shared-code"
+                placeholder="ivan-and-love"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                id="auth-email"
+                name="auth-email"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                id="auth-password"
+                name="auth-password"
+                placeholder="Create a password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <div class="form-actions gate-form-actions">
+              <button class="button primary wide" type="submit" data-auth-action="signup">Create account</button>
+              <button class="button secondary wide" type="submit" data-auth-action="signin">Sign in</button>
+            </div>
+            <p class="gate-hint">Both accounts should use the same shared space code so they join the same couple archive.</p>
+            <p class="gate-error" id="auth-error" aria-live="polite"></p>
+            <p class="gate-status" id="auth-status" aria-live="polite"></p>
           </form>
         </div>
       </div>

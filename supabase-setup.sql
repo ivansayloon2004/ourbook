@@ -1,5 +1,13 @@
 create extension if not exists "pgcrypto";
 
+create table if not exists public.couple_spaces (
+  id uuid primary key default gen_random_uuid(),
+  shared_code text not null unique,
+  phrase_hash text not null unique,
+  couple_title text not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
@@ -112,17 +120,93 @@ begin
 end;
 $$;
 
+create or replace function public.reserve_couple_space(
+  input_shared_code text,
+  input_phrase_hash text,
+  input_couple_title text
+)
+returns table (shared_code text, couple_title text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  normalized_code text := lower(regexp_replace(coalesce(input_shared_code, ''), '[^a-z0-9]+', '-', 'g'));
+  normalized_title text := trim(coalesce(input_couple_title, ''));
+begin
+  normalized_code := regexp_replace(normalized_code, '(^-+|-+$)', '', 'g');
+
+  if length(normalized_title) < 3 then
+    raise exception 'Add your names or couple title first.';
+  end if;
+
+  if length(normalized_code) < 4 then
+    raise exception 'Choose a shared space code with at least 4 characters.';
+  end if;
+
+  if coalesce(length(input_phrase_hash), 0) <> 64 then
+    raise exception 'Phrase security check failed. Try again.';
+  end if;
+
+  insert into public.couple_spaces (shared_code, phrase_hash, couple_title)
+  values (normalized_code, input_phrase_hash, normalized_title);
+
+  return query
+  select normalized_code, normalized_title;
+exception
+  when unique_violation then
+    if exists (
+      select 1
+      from public.couple_spaces
+      where couple_spaces.shared_code = normalized_code
+    ) then
+      raise exception 'That shared space code is already taken. Try a more unique one.';
+    end if;
+
+    raise exception 'That private phrase is already reserved. Choose a different one.';
+end;
+$$;
+
+create or replace function public.find_couple_space_by_phrase(input_phrase_hash text)
+returns table (shared_code text, couple_title text)
+language sql
+security definer
+set search_path = public
+as $$
+  select couple_spaces.shared_code, couple_spaces.couple_title
+  from public.couple_spaces
+  where couple_spaces.phrase_hash = input_phrase_hash
+  limit 1
+$$;
+
+create or replace function public.find_couple_space_by_code(input_shared_code text)
+returns table (shared_code text, couple_title text)
+language sql
+security definer
+set search_path = public
+as $$
+  select couple_spaces.shared_code, couple_spaces.couple_title
+  from public.couple_spaces
+  where couple_spaces.shared_code = lower(regexp_replace(coalesce(input_shared_code, ''), '[^a-z0-9]+', '-', 'g'))
+  limit 1
+$$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
+alter table public.couple_spaces enable row level security;
 alter table public.profiles enable row level security;
 alter table public.memories enable row level security;
 alter table public.memory_comments enable row level security;
 alter table public.memory_reactions enable row level security;
 alter table public.milestones enable row level security;
 alter table public.private_letters enable row level security;
+
+grant execute on function public.reserve_couple_space(text, text, text) to anon, authenticated;
+grant execute on function public.find_couple_space_by_phrase(text) to anon, authenticated;
+grant execute on function public.find_couple_space_by_code(text) to anon, authenticated;
 
 drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own"

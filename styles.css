@@ -151,7 +151,7 @@ body::after {
 
 .gate-panels {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.2rem;
   margin-top: 1.2rem;
 }
@@ -160,11 +160,19 @@ body::after {
   max-width: 420px;
 }
 
+.gate-form-wide {
+  grid-column: 1 / -1;
+}
+
 .gate-form {
   padding: 1.35rem;
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(109, 59, 71, 0.1);
+}
+
+.gate-form-actions {
+  margin-top: 1rem;
 }
 
 .gate-form h2 {
@@ -195,6 +203,22 @@ body::after {
   font-weight: 700;
   margin-bottom: 0.9rem;
   color: var(--wine);
+}
+
+.gate-form-wide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem 1rem;
+}
+
+.gate-form-wide h2,
+.gate-form-wide .gate-section-label,
+.gate-form-wide .gate-section-copy,
+.gate-form-wide .gate-hint,
+.gate-form-wide .gate-error,
+.gate-form-wide .gate-status,
+.gate-form-wide .form-actions {
+  grid-column: 1 / -1;
 }
 
 .gate-hint {
@@ -1037,7 +1061,8 @@ select:focus {
   .notes-grid,
   .vault-layout,
   .flashback-card,
-  .gate-panels {
+  .gate-panels,
+  .gate-form-wide {
     grid-template-columns: 1fr;
   }
 
