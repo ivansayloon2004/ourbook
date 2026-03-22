@@ -90,6 +90,15 @@ function formatDate(dateString) {
   }).format(date);
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
 function renderEmptyState() {
   memoryList.innerHTML =
     '<div class="memory-empty">No saved memories yet. Add your first one and start your archive.</div>';
@@ -109,6 +118,11 @@ function renderMemories() {
     node.querySelector(".memory-category").textContent = memory.category;
     node.querySelector(".memory-date").textContent = formatDate(memory.date);
     node.querySelector(".memory-date").dateTime = memory.date;
+    const image = node.querySelector(".memory-image");
+    if (memory.photo) {
+      image.src = memory.photo;
+      image.classList.remove("hidden");
+    }
     node.querySelector(".memory-title").textContent = memory.title;
     node.querySelector(".memory-description").textContent = memory.description;
     memoryList.appendChild(node);
@@ -207,15 +221,23 @@ function lockSite() {
   loginPassphraseInput.focus();
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const formData = new FormData(form);
+  const photoFile = formData.get("photo");
+  let photo = "";
+
+  if (photoFile instanceof File && photoFile.size > 0) {
+    photo = await readFileAsDataUrl(photoFile);
+  }
+
   const memory = {
     title: formData.get("title").toString().trim(),
     date: formData.get("date").toString(),
     category: formData.get("category").toString(),
     description: formData.get("description").toString().trim(),
+    photo,
   };
 
   if (!memory.title || !memory.date || !memory.description) {

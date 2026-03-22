@@ -274,6 +274,11 @@
                 ></textarea>
               </label>
 
+              <label>
+                Photo
+                <input type="file" id="photo" name="photo" accept="image/*" />
+              </label>
+
               <button class="button primary wide" type="submit">Save this memory</button>
             </form>
 
@@ -295,6 +300,7 @@
           <p class="memory-category"></p>
           <time class="memory-date"></time>
         </div>
+        <img class="memory-image hidden" alt="Saved memory photo" />
         <h4 class="memory-title"></h4>
         <p class="memory-description"></p>
       </article>

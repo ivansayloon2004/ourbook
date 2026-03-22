@@ -572,6 +572,20 @@ select:focus {
   animation: riseIn 420ms ease both;
 }
 
+.memory-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+  border-radius: 1rem;
+  margin: 0.7rem 0 0.95rem;
+  border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.hidden {
+  display: none;
+}
+
 .memory-entry-top {
   display: flex;
   justify-content: space-between;
