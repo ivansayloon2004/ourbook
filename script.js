@@ -21,7 +21,9 @@ const configBanner = document.getElementById("config-banner");
 const phraseForm = document.getElementById("phrase-form");
 const registerForm = document.getElementById("register-form");
 const authForm = document.getElementById("auth-form");
+const adminAccessToggle = document.getElementById("admin-access-toggle");
 const adminForm = document.getElementById("admin-form");
+const adminRegisterForm = document.getElementById("admin-register-form");
 const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
 const registerCoupleTitleInput = document.getElementById("register-couple-title");
@@ -40,6 +42,11 @@ const adminEmailInput = document.getElementById("admin-email");
 const adminPasswordInput = document.getElementById("admin-password");
 const adminError = document.getElementById("admin-error");
 const adminStatus = document.getElementById("admin-status");
+const adminRegisterEmailInput = document.getElementById("admin-register-email");
+const adminRegisterPasswordInput = document.getElementById("admin-register-password");
+const adminRegisterPasswordConfirmInput = document.getElementById("admin-register-password-confirm");
+const adminRegisterError = document.getElementById("admin-register-error");
+const adminRegisterStatus = document.getElementById("admin-register-status");
 const gateNames = document.getElementById("gate-names");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
@@ -172,6 +179,17 @@ function setAdminMessage(message = "", type = "error") {
   adminStatus.textContent = "";
 }
 
+function setAdminRegisterMessage(message = "", type = "error") {
+  if (type === "success") {
+    adminRegisterStatus.textContent = message;
+    adminRegisterError.textContent = "";
+    return;
+  }
+
+  adminRegisterError.textContent = message;
+  adminRegisterStatus.textContent = "";
+}
+
 function isGateUnlocked() {
   return window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
 }
@@ -206,6 +224,11 @@ function setAdminMode(enabled) {
   document.querySelectorAll(".couple-only").forEach((node) => {
     node.classList.toggle("hidden", enabled);
   });
+}
+
+function setAdminAccessExpanded(expanded) {
+  adminForm.classList.toggle("hidden", !expanded);
+  adminAccessToggle.textContent = expanded ? "Hide admin sign in" : "Admin sign in";
 }
 
 function setInviteStatus(message = "", type = "muted") {
@@ -402,6 +425,14 @@ async function fetchAdminRecentMemories() {
 
 async function checkAdminAccess() {
   const { data, error } = await supabaseClient.rpc("current_is_admin");
+  if (error) throw error;
+  return Boolean(data);
+}
+
+async function adminSignupAllowed(email) {
+  const { data, error } = await supabaseClient.rpc("admin_signup_allowed", {
+    input_email: email,
+  });
   if (error) throw error;
   return Boolean(data);
 }
@@ -1271,6 +1302,96 @@ async function handleAdminSubmit(event) {
   await applySession(data.session);
 }
 
+async function handleAdminRegister(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAdminRegisterMessage("Supabase is required for admin registration.");
+    return;
+  }
+
+  const email = adminRegisterEmailInput.value.trim();
+  const password = adminRegisterPasswordInput.value;
+  const confirmPassword = adminRegisterPasswordConfirmInput.value;
+
+  if (!email || !password || !confirmPassword) {
+    setAdminRegisterMessage("Fill in every admin registration field first.");
+    return;
+  }
+
+  if (password.length < 8) {
+    setAdminRegisterMessage("Use at least 8 characters for the admin password.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setAdminRegisterMessage("The two admin password fields do not match.");
+    return;
+  }
+
+  setAdminRegisterMessage("", "success");
+  adminRegisterStatus.textContent = "Checking whether this email can register as admin...";
+
+  let allowed = false;
+  try {
+    allowed = await adminSignupAllowed(email);
+  } catch (error) {
+    setAdminRegisterMessage(error.message || "Admin registration checks are not ready yet. Run the latest SQL file first.");
+    return;
+  }
+
+  if (!allowed) {
+    setAdminRegisterMessage("This email is not allowed to register as admin right now. If this is not the first admin, add the email to public.admin_users in Supabase first.");
+    return;
+  }
+
+  adminRegisterStatus.textContent = "Creating your admin account...";
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        display_name: "Admin",
+        admin_registration: true,
+      },
+    },
+  });
+
+  if (error) {
+    setAdminRegisterMessage(error.message);
+    return;
+  }
+
+  adminEmailInput.value = email;
+  setAdminAccessExpanded(true);
+  adminRegisterPasswordInput.value = "";
+  adminRegisterPasswordConfirmInput.value = "";
+
+  if (!data.session) {
+    setAdminRegisterMessage("Admin account created. Check your email inbox, confirm the link, then sign in through the admin form.", "success");
+    return;
+  }
+
+  let isAdmin = false;
+  try {
+    isAdmin = await checkAdminAccess();
+  } catch (accessError) {
+    await supabaseClient.auth.signOut();
+    setAdminRegisterMessage(accessError.message || "Admin checks are not ready yet. Run the latest SQL file first.");
+    return;
+  }
+
+  if (!isAdmin) {
+    await supabaseClient.auth.signOut();
+    setAdminRegisterMessage("Your account was created, but admin access is not ready for this email yet. Add it to public.admin_users or rerun the latest SQL file.");
+    return;
+  }
+
+  clearUnlockedCouple();
+  setAdminRegisterMessage("Admin account created. Opening the admin panel now.", "success");
+  await applySession(data.session);
+}
+
 async function handleProfileSave(event) {
   event.preventDefault();
   const payload = {
@@ -1515,10 +1636,15 @@ renderEmptyState("Enter your shared phrase to open your storybook.");
 updateGateNames(savedCoupleTitle());
 authSharedCodeInput.value = savedSharedCode();
 setAdminMode(false);
+setAdminAccessExpanded(false);
 phraseForm.addEventListener("submit", handlePhraseUnlock);
 registerForm.addEventListener("submit", handleRegisterPhrase);
 authForm.addEventListener("submit", handleAuthSubmit);
+adminAccessToggle.addEventListener("click", () => {
+  setAdminAccessExpanded(adminForm.classList.contains("hidden"));
+});
 adminForm.addEventListener("submit", handleAdminSubmit);
+adminRegisterForm.addEventListener("submit", handleAdminRegister);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);
 milestoneForm.addEventListener("submit", handleMilestoneSave);

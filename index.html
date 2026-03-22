@@ -63,7 +63,9 @@
               <p class="gate-error" id="gate-error" aria-live="polite"></p>
             </form>
 
-            <form class="admin-inline" id="admin-form">
+            <button class="button secondary wide" id="admin-access-toggle" type="button">Admin sign in</button>
+
+            <form class="admin-inline hidden" id="admin-form">
               <p class="gate-section-label admin-label">Admin</p>
               <label>
                 Admin email
@@ -90,6 +92,48 @@
               <button class="button secondary wide" type="submit">Open admin panel</button>
               <p class="gate-error" id="admin-error" aria-live="polite"></p>
               <p class="gate-status" id="admin-status" aria-live="polite"></p>
+            </form>
+
+            <form class="admin-inline" id="admin-register-form">
+              <p class="gate-section-label admin-label">Register Admin</p>
+              <p class="gate-section-copy">Create the first admin here. After that, only emails already allowlisted in Supabase can register as admin.</p>
+              <label>
+                Admin email
+                <input
+                  type="email"
+                  id="admin-register-email"
+                  name="admin-register-email"
+                  placeholder="admin@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </label>
+              <label>
+                Admin password
+                <input
+                  type="password"
+                  id="admin-register-password"
+                  name="admin-register-password"
+                  placeholder="Create your admin password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <label>
+                Confirm password
+                <input
+                  type="password"
+                  id="admin-register-password-confirm"
+                  name="admin-register-password-confirm"
+                  placeholder="Re-enter the same password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <button class="button secondary wide" type="submit">Register admin</button>
+              <p class="gate-hint">Rerun the latest Supabase SQL first so the first admin can claim ownership automatically.</p>
+              <p class="gate-error" id="admin-register-error" aria-live="polite"></p>
+              <p class="gate-status" id="admin-register-status" aria-live="polite"></p>
             </form>
           </div>
 
