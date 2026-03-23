@@ -67,7 +67,7 @@
 
             <form class="admin-inline hidden" id="admin-form">
               <p class="gate-section-label admin-label">Admin</p>
-              <p class="gate-section-copy">Create the first admin here, or sign in if your admin account already exists.</p>
+              <p class="gate-section-copy">Create the first admin here, sign in if your admin account already exists, or send yourself a password reset email.</p>
               <label>
                 Admin email
                 <input
@@ -104,9 +104,40 @@
                 <button class="button primary wide" type="submit" data-admin-action="signup">Create admin account</button>
                 <button class="button secondary wide" type="submit" data-admin-action="signin">Open admin panel</button>
               </div>
+              <button class="button secondary wide" id="admin-reset-password" type="button">Send password reset email</button>
               <p class="gate-hint">If this is the first admin, rerun the latest Supabase SQL first so ownership can be claimed automatically.</p>
               <p class="gate-error" id="admin-error" aria-live="polite"></p>
               <p class="gate-status" id="admin-status" aria-live="polite"></p>
+            </form>
+
+            <form class="admin-inline hidden" id="password-recovery-form">
+              <p class="gate-section-label admin-label">Password Recovery</p>
+              <p class="gate-section-copy">Use the recovery link from your email, then set your new password here.</p>
+              <label>
+                New password
+                <input
+                  type="password"
+                  id="recovery-password"
+                  name="recovery-password"
+                  placeholder="Enter your new password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <label>
+                Confirm new password
+                <input
+                  type="password"
+                  id="recovery-password-confirm"
+                  name="recovery-password-confirm"
+                  placeholder="Re-enter your new password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <button class="button primary wide" type="submit">Save new password</button>
+              <p class="gate-error" id="recovery-error" aria-live="polite"></p>
+              <p class="gate-status" id="recovery-status" aria-live="polite"></p>
             </form>
           </div>
 

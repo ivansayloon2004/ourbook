@@ -24,6 +24,8 @@ const authForm = document.getElementById("auth-form");
 const adminAccessToggle = document.getElementById("admin-access-toggle");
 const adminForm = document.getElementById("admin-form");
 const adminConfirmWrap = document.getElementById("admin-confirm-wrap");
+const adminResetPasswordButton = document.getElementById("admin-reset-password");
+const passwordRecoveryForm = document.getElementById("password-recovery-form");
 const sharedPassphraseInput = document.getElementById("shared-passphrase");
 const gateError = document.getElementById("gate-error");
 const registerCoupleTitleInput = document.getElementById("register-couple-title");
@@ -43,6 +45,10 @@ const adminPasswordInput = document.getElementById("admin-password");
 const adminPasswordConfirmInput = document.getElementById("admin-password-confirm");
 const adminError = document.getElementById("admin-error");
 const adminStatus = document.getElementById("admin-status");
+const recoveryPasswordInput = document.getElementById("recovery-password");
+const recoveryPasswordConfirmInput = document.getElementById("recovery-password-confirm");
+const recoveryError = document.getElementById("recovery-error");
+const recoveryStatus = document.getElementById("recovery-status");
 const gateNames = document.getElementById("gate-names");
 const userChip = document.getElementById("user-chip");
 const signOutButton = document.getElementById("sign-out");
@@ -118,6 +124,7 @@ let editingMilestoneId = "";
 let currentMonth = new Date();
 let activeInviteToken = "";
 let currentIsAdmin = false;
+let passwordRecoveryMode = false;
 
 function setUnlockedState(unlocked) {
   gate.classList.toggle("hidden", unlocked);
@@ -175,6 +182,17 @@ function setAdminMessage(message = "", type = "error") {
   adminStatus.textContent = "";
 }
 
+function setRecoveryMessage(message = "", type = "error") {
+  if (type === "success") {
+    recoveryStatus.textContent = message;
+    recoveryError.textContent = "";
+    return;
+  }
+
+  recoveryError.textContent = message;
+  recoveryStatus.textContent = "";
+}
+
 function isGateUnlocked() {
   return window.sessionStorage.getItem(GATE_SESSION_KEY) === "true";
 }
@@ -228,8 +246,34 @@ function setAdminAccessExpanded(expanded) {
 
 function resetAdminAccessForms() {
   adminForm.reset();
+  passwordRecoveryForm.reset();
   setAdminMessage("");
+  setRecoveryMessage("");
   adminConfirmWrap.classList.add("hidden");
+  passwordRecoveryForm.classList.add("hidden");
+  passwordRecoveryMode = false;
+}
+
+function setPasswordRecoveryMode(enabled) {
+  passwordRecoveryMode = enabled;
+  passwordRecoveryForm.classList.toggle("hidden", !enabled);
+  if (!enabled) {
+    recoveryPasswordInput.value = "";
+    recoveryPasswordConfirmInput.value = "";
+    setRecoveryMessage("");
+    return;
+  }
+
+  setUnlockedState(false);
+  setAdminAccessExpanded(true);
+  passwordRecoveryForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  window.setTimeout(() => {
+    recoveryPasswordInput.focus();
+  }, 220);
+}
+
+function hasRecoveryStateInUrl() {
+  return /type=recovery/.test(`${window.location.search}${window.location.hash}`);
 }
 
 function setInviteStatus(message = "", type = "muted") {
@@ -1400,6 +1444,88 @@ async function handleAdminSubmit(event) {
   await applySession(data.session);
 }
 
+async function handleAdminPasswordResetRequest() {
+  if (!supabaseClient) {
+    setAdminMessage("Supabase is required for password reset.");
+    return;
+  }
+
+  const email = adminEmailInput.value.trim();
+  if (!email) {
+    setAdminMessage("Enter your admin email first, then send the reset email.");
+    return;
+  }
+
+  setAdminMessage("", "success");
+  adminStatus.textContent = "Sending password reset email...";
+
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) {
+    setAdminMessage(error.message);
+    return;
+  }
+
+  setAdminMessage("Password reset email sent. Open the link in your inbox, then set the new password below.", "success");
+}
+
+async function handlePasswordRecoverySubmit(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setRecoveryMessage("Supabase is required for password recovery.");
+    return;
+  }
+
+  const password = recoveryPasswordInput.value;
+  const confirmPassword = recoveryPasswordConfirmInput.value;
+
+  if (!password || !confirmPassword) {
+    setRecoveryMessage("Enter and confirm the new password first.");
+    return;
+  }
+
+  if (password.length < 8) {
+    setRecoveryMessage("Use at least 8 characters for the new password.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setRecoveryMessage("The two recovery password fields do not match.");
+    return;
+  }
+
+  setRecoveryMessage("", "success");
+  recoveryStatus.textContent = "Saving your new password...";
+
+  const { error } = await supabaseClient.auth.updateUser({
+    password,
+  });
+
+  if (error) {
+    setRecoveryMessage(error.message);
+    return;
+  }
+
+  setRecoveryMessage("Password updated. You can now sign in with the new password.", "success");
+  adminPasswordInput.value = "";
+  adminPasswordConfirmInput.value = "";
+  recoveryPasswordInput.value = "";
+  recoveryPasswordConfirmInput.value = "";
+
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session) {
+      const isAdmin = await checkAdminAccess();
+      if (isAdmin) {
+        await applySession(data.session);
+        return;
+      }
+    }
+  } catch (_error) {
+    // If admin access is not available, leave the success message visible.
+  }
+}
+
 async function handleProfileSave(event) {
   event.preventDefault();
   const payload = {
@@ -1654,6 +1780,8 @@ adminAccessToggle.addEventListener("click", () => {
   setAdminAccessExpanded(adminForm.classList.contains("hidden"));
 });
 adminForm.addEventListener("submit", handleAdminSubmit);
+adminResetPasswordButton.addEventListener("click", handleAdminPasswordResetRequest);
+passwordRecoveryForm.addEventListener("submit", handlePasswordRecoverySubmit);
 signOutButton.addEventListener("click", handleSignOut);
 profileForm.addEventListener("submit", handleProfileSave);
 milestoneForm.addEventListener("submit", handleMilestoneSave);
@@ -1685,6 +1813,11 @@ if (isConfigured) {
       return;
     }
 
+    if (hasRecoveryStateInUrl()) {
+      setPasswordRecoveryMode(true);
+      return;
+    }
+
     try {
       const isAdmin = await checkAdminAccess();
       if (isAdmin) {
@@ -1697,7 +1830,12 @@ if (isConfigured) {
 
     await applyGateUnlock();
   });
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      setPasswordRecoveryMode(true);
+      return;
+    }
+
     if (currentIsAdmin || window.sessionStorage.getItem(GATE_SESSION_KEY) === "true") {
       applySession(session);
     }
