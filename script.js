@@ -1140,6 +1140,15 @@ async function loadAdminData() {
   renderAdminMemories(memories);
 }
 
+function renderAdminLoadError(message) {
+  adminTotalCouples.textContent = "0";
+  adminTotalProfiles.textContent = "0";
+  adminTotalMemories.textContent = "0";
+  adminTotalLetters.textContent = "0";
+  adminCoupleList.innerHTML = `<div class="memory-empty">${escapeHtml(message)}</div>`;
+  adminMemoryList.innerHTML = `<div class="memory-empty">${escapeHtml(message)}</div>`;
+}
+
 async function handlePhraseUnlock(event) {
   event.preventDefault();
   if (!supabaseClient) {
@@ -1685,19 +1694,31 @@ async function applySession(session) {
     return;
   }
 
+  let isAdmin = false;
   try {
-    const isAdmin = await checkAdminAccess();
-    if (isAdmin) {
-      setAdminMode(true);
-      resetAdminAccessForms();
-      userChip.textContent = `${session.user.email || "Admin"} | admin`;
-      setUnlockedState(true);
-      await loadAdminData();
-      adminSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (supabaseClient) await clearChannels();
-      return;
-    }
+    isAdmin = await checkAdminAccess();
+  } catch (error) {
+    setUnlockedState(false);
+    setGateMessage(error.message || "We could not verify this session yet. Run the updated SQL file first.");
+    return;
+  }
 
+  if (isAdmin) {
+    setAdminMode(true);
+    resetAdminAccessForms();
+    userChip.textContent = `${session.user.email || "Admin"} | admin`;
+    setUnlockedState(true);
+    try {
+      await loadAdminData();
+    } catch (error) {
+      renderAdminLoadError(error.message || "Admin access is valid, but the admin dashboard queries are not ready yet. Rerun the latest SQL file.");
+    }
+    adminSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (supabaseClient) await clearChannels();
+    return;
+  }
+
+  try {
     setAdminMode(false);
     await loadProfile(session.user.id);
     setUnlockedState(true);
