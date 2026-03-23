@@ -56,6 +56,24 @@ alter table public.profiles add column if not exists anniversary_date date;
 alter table public.profiles add column if not exists hero_quote text;
 alter table public.profiles add column if not exists reminder_days integer not null default 7;
 
+create table if not exists public.account_warnings (
+  id uuid primary key default gen_random_uuid(),
+  shared_code text not null references public.couple_spaces(shared_code) on delete cascade,
+  target_profile_id uuid references public.profiles(id) on delete cascade,
+  reason text not null,
+  severity text not null default 'warning',
+  status text not null default 'open',
+  source text not null default 'manual',
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.account_warnings add column if not exists target_profile_id uuid references public.profiles(id) on delete cascade;
+alter table public.account_warnings add column if not exists severity text not null default 'warning';
+alter table public.account_warnings add column if not exists status text not null default 'open';
+alter table public.account_warnings add column if not exists source text not null default 'manual';
+alter table public.account_warnings add column if not exists created_by uuid references auth.users(id) on delete set null;
+
 create table if not exists public.memories (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -438,6 +456,154 @@ begin
 end;
 $$;
 
+create or replace function public.admin_couple_moderation()
+returns table (
+  shared_code text,
+  couple_title text,
+  profile_count bigint,
+  memory_count bigint,
+  letter_count bigint,
+  warning_count bigint,
+  risk_level text,
+  risk_reasons text,
+  latest_warning text,
+  members jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  select
+    spaces.shared_code,
+    spaces.couple_title,
+    coalesce(profile_stats.profile_count, 0) as profile_count,
+    coalesce(memory_stats.memory_count, 0) as memory_count,
+    coalesce(letter_stats.letter_count, 0) as letter_count,
+    coalesce(warning_stats.warning_count, 0) as warning_count,
+    case
+      when coalesce(risk_stats.keyword_hits, 0) >= 2
+        or coalesce(risk_stats.activity_hits, 0) >= 20
+        or coalesce(warning_stats.warning_count, 0) >= 3
+      then 'high'
+      when coalesce(risk_stats.keyword_hits, 0) >= 1
+        or coalesce(risk_stats.activity_hits, 0) >= 10
+        or coalesce(risk_stats.link_hits, 0) >= 4
+        or coalesce(warning_stats.warning_count, 0) >= 1
+      then 'watch'
+      else 'clear'
+    end as risk_level,
+    coalesce(
+      nullif(
+        concat_ws(
+          ' | ',
+          case when coalesce(warning_stats.warning_count, 0) > 0 then warning_stats.warning_count::text || ' open warning(s)' end,
+          case when coalesce(risk_stats.keyword_hits, 0) > 0 then risk_stats.keyword_hits::text || ' keyword risk hit(s)' end,
+          case when coalesce(risk_stats.link_hits, 0) >= 4 then risk_stats.link_hits::text || ' link-heavy item(s)' end,
+          case when coalesce(risk_stats.activity_hits, 0) >= 10 then risk_stats.activity_hits::text || ' activity event(s) in 24h' end
+        ),
+        ''
+      ),
+      'No automatic issues detected.'
+    ) as risk_reasons,
+    warning_stats.latest_warning,
+    coalesce(member_stats.members, '[]'::jsonb) as members
+  from public.couple_spaces spaces
+  left join lateral (
+    select count(*) as profile_count
+    from public.profiles
+    where profiles.shared_code = spaces.shared_code
+  ) profile_stats on true
+  left join lateral (
+    select
+      count(*) as memory_count,
+      count(*) filter (
+        where memories.created_at >= timezone('utc', now()) - interval '24 hours'
+      ) as recent_memory_count,
+      count(*) filter (
+        where lower(coalesce(memories.title, '') || ' ' || coalesce(memories.description, '')) ~ '(scam|fraud|blackmail|extort|exploit|hate|abuse|violent|kill|nude|sexual)'
+      ) as keyword_memory_count,
+      count(*) filter (
+        where coalesce(memories.description, '') ~* '(https?://|www\.)'
+      ) as link_memory_count
+    from public.memories
+    where memories.couple_code = spaces.shared_code
+  ) memory_stats on true
+  left join lateral (
+    select
+      count(*) as letter_count,
+      count(*) filter (
+        where private_letters.created_at >= timezone('utc', now()) - interval '24 hours'
+      ) as recent_letter_count,
+      count(*) filter (
+        where lower(coalesce(private_letters.title, '') || ' ' || coalesce(private_letters.body, '')) ~ '(scam|fraud|blackmail|extort|exploit|hate|abuse|violent|kill|nude|sexual)'
+      ) as keyword_letter_count,
+      count(*) filter (
+        where coalesce(private_letters.body, '') ~* '(https?://|www\.)'
+      ) as link_letter_count
+    from public.private_letters
+    where private_letters.couple_code = spaces.shared_code
+  ) letter_stats on true
+  left join lateral (
+    select
+      count(*) filter (
+        where memory_comments.created_at >= timezone('utc', now()) - interval '24 hours'
+      ) as recent_comment_count,
+      count(*) filter (
+        where lower(coalesce(memory_comments.body, '')) ~ '(scam|fraud|blackmail|extort|exploit|hate|abuse|violent|kill|nude|sexual)'
+      ) as keyword_comment_count,
+      count(*) filter (
+        where coalesce(memory_comments.body, '') ~* '(https?://|www\.)'
+      ) as link_comment_count
+    from public.memory_comments
+    where memory_comments.couple_code = spaces.shared_code
+  ) comment_stats on true
+  left join lateral (
+    select
+      coalesce(memory_stats.recent_memory_count, 0)
+        + coalesce(letter_stats.recent_letter_count, 0)
+        + coalesce(comment_stats.recent_comment_count, 0) as activity_hits,
+      coalesce(memory_stats.keyword_memory_count, 0)
+        + coalesce(letter_stats.keyword_letter_count, 0)
+        + coalesce(comment_stats.keyword_comment_count, 0) as keyword_hits,
+      coalesce(memory_stats.link_memory_count, 0)
+        + coalesce(letter_stats.link_letter_count, 0)
+        + coalesce(comment_stats.link_comment_count, 0) as link_hits
+  ) risk_stats on true
+  left join lateral (
+    select
+      count(*) filter (where account_warnings.status = 'open') as warning_count,
+      (
+        array_agg(
+          account_warnings.severity || ': ' || left(account_warnings.reason, 120)
+          order by account_warnings.created_at desc
+        )
+      )[1] as latest_warning
+    from public.account_warnings
+    where account_warnings.shared_code = spaces.shared_code
+  ) warning_stats on true
+  left join lateral (
+    select jsonb_agg(
+      jsonb_build_object(
+        'id', profiles.id,
+        'display_name', profiles.display_name,
+        'email', coalesce(users.email, '')
+      )
+      order by profiles.created_at asc
+    ) as members
+    from public.profiles
+    left join auth.users users on users.id = profiles.id
+    where profiles.shared_code = spaces.shared_code
+  ) member_stats on true
+  order by spaces.created_at desc;
+end;
+$$;
+
 create or replace function public.admin_recent_memories()
 returns table (
   id uuid,
@@ -487,6 +653,119 @@ begin
 end;
 $$;
 
+create or replace function public.admin_warn_couple(
+  input_shared_code text,
+  input_reason text,
+  input_severity text default 'warning'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  normalized_code text := lower(trim(coalesce(input_shared_code, '')));
+  normalized_reason text := trim(coalesce(input_reason, ''));
+  normalized_severity text := lower(trim(coalesce(input_severity, 'warning')));
+  warning_id uuid;
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  if normalized_reason = '' then
+    raise exception 'Add a warning reason first.';
+  end if;
+
+  if normalized_severity not in ('warning', 'probation', 'suspend') then
+    normalized_severity := 'warning';
+  end if;
+
+  insert into public.account_warnings (shared_code, reason, severity, status, source, created_by)
+  values (normalized_code, normalized_reason, normalized_severity, 'open', 'manual', auth.uid())
+  returning id into warning_id;
+
+  return warning_id;
+end;
+$$;
+
+create or replace function public.admin_clear_couple_warnings(input_shared_code text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  update public.account_warnings
+  set status = 'resolved'
+  where account_warnings.shared_code = lower(trim(coalesce(input_shared_code, '')))
+    and account_warnings.status = 'open';
+end;
+$$;
+
+create or replace function public.admin_delete_profile(input_profile_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  delete from storage.objects
+  where objects.bucket_id = 'memory-photos'
+    and split_part(objects.name, '/', 2) = input_profile_id::text;
+
+  delete from auth.users
+  where users.id = input_profile_id;
+
+  delete from public.profiles
+  where profiles.id = input_profile_id;
+end;
+$$;
+
+create or replace function public.admin_delete_couple_space(input_shared_code text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  normalized_code text := lower(trim(coalesce(input_shared_code, '')));
+begin
+  if not public.current_is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  delete from storage.objects
+  where objects.bucket_id = 'memory-photos'
+    and split_part(objects.name, '/', 1) = normalized_code;
+
+  delete from auth.users
+  where users.id in (
+    select profiles.id
+    from public.profiles
+    where profiles.shared_code = normalized_code
+  );
+
+  delete from public.profiles where profiles.shared_code = normalized_code;
+  delete from public.memories where memories.couple_code = normalized_code;
+  delete from public.memory_comments where memory_comments.couple_code = normalized_code;
+  delete from public.memory_reactions where memory_reactions.couple_code = normalized_code;
+  delete from public.milestones where milestones.couple_code = normalized_code;
+  delete from public.private_letters where private_letters.couple_code = normalized_code;
+  delete from public.couple_invites where couple_invites.shared_code = normalized_code;
+  delete from public.account_warnings where account_warnings.shared_code = normalized_code;
+  delete from public.couple_spaces where couple_spaces.shared_code = normalized_code;
+end;
+$$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
@@ -496,6 +775,7 @@ alter table public.couple_spaces enable row level security;
 alter table public.couple_invites enable row level security;
 alter table public.admin_users enable row level security;
 alter table public.profiles enable row level security;
+alter table public.account_warnings enable row level security;
 alter table public.memories enable row level security;
 alter table public.memory_comments enable row level security;
 alter table public.memory_reactions enable row level security;
@@ -511,8 +791,13 @@ grant execute on function public.current_is_admin() to authenticated;
 grant execute on function public.admin_signup_allowed(text) to anon, authenticated;
 grant execute on function public.admin_site_overview() to authenticated;
 grant execute on function public.admin_couple_spaces() to authenticated;
+grant execute on function public.admin_couple_moderation() to authenticated;
 grant execute on function public.admin_recent_memories() to authenticated;
 grant execute on function public.admin_delete_memory(uuid) to authenticated;
+grant execute on function public.admin_warn_couple(text, text, text) to authenticated;
+grant execute on function public.admin_clear_couple_warnings(text) to authenticated;
+grant execute on function public.admin_delete_profile(uuid) to authenticated;
+grant execute on function public.admin_delete_couple_space(text) to authenticated;
 
 drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own"

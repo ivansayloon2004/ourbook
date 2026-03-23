@@ -212,6 +212,62 @@ body::after {
   display: none;
 }
 
+.admin-couple-entry {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-risk-row {
+  margin-top: -0.1rem;
+}
+
+.admin-risk-badge.admin-risk-clear {
+  background: rgba(47, 108, 80, 0.12);
+  color: #2f6c50;
+}
+
+.admin-risk-badge.admin-risk-watch {
+  background: rgba(215, 172, 98, 0.16);
+  color: #8b6321;
+}
+
+.admin-risk-badge.admin-risk-high {
+  background: rgba(156, 49, 71, 0.14);
+  color: #9c3147;
+}
+
+.admin-member-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-member-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.admin-member-name,
+.admin-member-email {
+  margin: 0;
+}
+
+.admin-member-name {
+  color: var(--wine);
+  font-weight: 800;
+}
+
+.admin-member-email {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-top: 0.2rem;
+}
+
 .admin-label {
   margin-top: 0.15rem;
 }
@@ -1232,6 +1288,11 @@ select:focus {
 
   .comment-form {
     grid-template-columns: 1fr;
+  }
+
+  .admin-member-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .calendar-grid {

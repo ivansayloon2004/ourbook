@@ -333,14 +333,98 @@ function renderAdminCouples(couples) {
 
   couples.forEach((couple) => {
     const node = document.createElement("article");
-    node.className = "memory-entry";
+    node.className = "memory-entry admin-couple-entry";
+    const members = Array.isArray(couple.members) ? couple.members : [];
+    const warningCount = Number(couple.warning_count || 0);
+    const riskLevel = String(couple.risk_level || "clear").toLowerCase();
+    const riskReasons = couple.risk_reasons || "No automatic issues detected.";
     node.innerHTML = `
       <div class="memory-entry-top">
         <strong>${escapeHtml(couple.couple_title || couple.shared_code)}</strong>
         <span>${escapeHtml(couple.shared_code)}</span>
       </div>
+      <div class="memory-badges admin-risk-row">
+        <span class="memory-badge admin-risk-badge admin-risk-${escapeHtml(riskLevel)}">${escapeHtml(riskLevel)}</span>
+        <span class="memory-badge">${warningCount} warning${warningCount === 1 ? "" : "s"}</span>
+      </div>
       <p class="memory-meta">Members: ${couple.profile_count} | Memories: ${couple.memory_count} | Letters: ${couple.letter_count}</p>
+      <p class="memory-description">${escapeHtml(riskReasons)}</p>
+      <p class="memory-meta">${escapeHtml(couple.latest_warning || "No active warning on this couple space.")}</p>
+      <div class="admin-member-list"></div>
+      <div class="memory-actions">
+        <button class="clear-button admin-warn-couple" type="button">Warn couple</button>
+        <button class="clear-button admin-clear-warnings" type="button">Clear warnings</button>
+        <button class="clear-button admin-delete-couple" type="button">Delete couple</button>
+      </div>
     `;
+
+    const memberList = node.querySelector(".admin-member-list");
+    if (!members.length) {
+      memberList.innerHTML = '<div class="comment-item"><p>No member profiles found for this couple space.</p></div>';
+    } else {
+      members.forEach((member) => {
+        const memberNode = document.createElement("div");
+        memberNode.className = "admin-member-item";
+        memberNode.innerHTML = `
+          <div>
+            <p class="admin-member-name">${escapeHtml(member.display_name || "Unknown member")}</p>
+            <p class="admin-member-email">${escapeHtml(member.email || "No email found")}</p>
+          </div>
+          <button class="clear-button admin-delete-profile" type="button">Delete user</button>
+        `;
+        memberNode.querySelector(".admin-delete-profile").addEventListener("click", async () => {
+          if (!member.id) {
+            setAdminMessage("This member record is missing an id and cannot be deleted.");
+            return;
+          }
+          if (!window.confirm(`Delete user ${member.email || member.display_name || "this member"}? This cannot be undone.`)) return;
+          try {
+            await deleteProfileAsAdmin(member.id);
+            setAdminMessage("User deleted successfully.", "success");
+            await loadAdminData();
+          } catch (error) {
+            setAdminMessage(error.message || "Could not delete that user.");
+          }
+        });
+        memberList.appendChild(memberNode);
+      });
+    }
+
+    node.querySelector(".admin-warn-couple").addEventListener("click", async () => {
+      const reason = window.prompt(`Add a warning reason for ${couple.couple_title || couple.shared_code}:`);
+      if (reason === null) return;
+      const severity = (window.prompt("Severity: warning, probation, or suspend", "warning") || "warning").trim().toLowerCase();
+      try {
+        await warnCoupleAsAdmin(couple.shared_code, reason, severity);
+        setAdminMessage("Warning added to the couple account.", "success");
+        await loadAdminData();
+      } catch (error) {
+        setAdminMessage(error.message || "Could not create that warning.");
+      }
+    });
+
+    node.querySelector(".admin-clear-warnings").addEventListener("click", async () => {
+      if (!window.confirm(`Clear all open warnings for ${couple.couple_title || couple.shared_code}?`)) return;
+      try {
+        await clearCoupleWarningsAsAdmin(couple.shared_code);
+        setAdminMessage("Warnings cleared for that couple space.", "success");
+        await loadAdminData();
+      } catch (error) {
+        setAdminMessage(error.message || "Could not clear those warnings.");
+      }
+    });
+
+    node.querySelector(".admin-delete-couple").addEventListener("click", async () => {
+      if (!window.confirm(`Delete the entire couple space ${couple.couple_title || couple.shared_code}, its users, memories, letters, and warnings? This cannot be undone.`)) return;
+      try {
+        await deleteCoupleSpaceAsAdmin(couple.shared_code);
+        setAdminMessage("Couple space deleted successfully.", "success");
+        await loadAdminData();
+      } catch (error) {
+        setAdminMessage(error.message || "Could not delete that couple space.");
+      }
+    });
+
     adminCoupleList.appendChild(node);
   });
 }
@@ -363,9 +447,22 @@ function renderAdminMemories(memories) {
       <p class="memory-description">${escapeHtml(memory.description || "")}</p>
       <p class="memory-meta">By ${escapeHtml(memory.author_name || "Unknown")} | ${formatDate(memory.memory_date)}</p>
       <div class="memory-actions">
+        <button class="clear-button admin-warn-memory-couple" type="button">Warn couple</button>
         <button class="clear-button admin-delete-memory" type="button">Delete submission</button>
       </div>
     `;
+    node.querySelector(".admin-warn-memory-couple").addEventListener("click", async () => {
+      const reason = window.prompt(`Add a warning reason for ${memory.shared_code}:`);
+      if (reason === null) return;
+      const severity = (window.prompt("Severity: warning, probation, or suspend", "warning") || "warning").trim().toLowerCase();
+      try {
+        await warnCoupleAsAdmin(memory.shared_code, reason, severity);
+        setAdminMessage("Warning added to the couple account.", "success");
+        await loadAdminData();
+      } catch (error) {
+        setAdminMessage(error.message || "Could not create that warning.");
+      }
+    });
     node.querySelector(".admin-delete-memory").addEventListener("click", async () => {
       try {
         await deleteMemoryAsAdmin(memory.id);
@@ -457,7 +554,7 @@ async function fetchAdminOverview() {
 }
 
 async function fetchAdminCouples() {
-  const { data, error } = await supabaseClient.rpc("admin_couple_spaces");
+  const { data, error } = await supabaseClient.rpc("admin_couple_moderation");
   if (error) throw error;
   return data || [];
 }
@@ -485,6 +582,37 @@ async function adminSignupAllowed(email) {
 async function deleteMemoryAsAdmin(memoryId) {
   const { error } = await supabaseClient.rpc("admin_delete_memory", {
     input_memory_id: memoryId,
+  });
+  if (error) throw error;
+}
+
+async function warnCoupleAsAdmin(sharedCode, reason, severity = "warning") {
+  const { data, error } = await supabaseClient.rpc("admin_warn_couple", {
+    input_shared_code: sharedCode,
+    input_reason: reason,
+    input_severity: severity,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function clearCoupleWarningsAsAdmin(sharedCode) {
+  const { error } = await supabaseClient.rpc("admin_clear_couple_warnings", {
+    input_shared_code: sharedCode,
+  });
+  if (error) throw error;
+}
+
+async function deleteProfileAsAdmin(profileId) {
+  const { error } = await supabaseClient.rpc("admin_delete_profile", {
+    input_profile_id: profileId,
+  });
+  if (error) throw error;
+}
+
+async function deleteCoupleSpaceAsAdmin(sharedCode) {
+  const { error } = await supabaseClient.rpc("admin_delete_couple_space", {
+    input_shared_code: sharedCode,
   });
   if (error) throw error;
 }
